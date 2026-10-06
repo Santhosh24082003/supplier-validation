@@ -113,12 +113,12 @@ export default function InvitationsPage() {
                 <button
                     onClick={() =>
                         router.push(
-                            `/admin/registrations/${id}/fields`
+                            "/admin"
                         )
                     }
                     className="mb-6 text-sm text-slate-500 hover:text-slate-900"
                 >
-                    ← Back to Registration
+                    ← Back to Admin Dashboard
                 </button>
 
                 <div className="mb-8">

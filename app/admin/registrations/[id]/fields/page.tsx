@@ -363,12 +363,12 @@ export default function DynamicFieldsPage() {
                     <button
                         onClick={() =>
                             router.push(
-                                "/admin/registrations"
+                                "/admin"
                             )
                         }
                         className="mt-5 px-5 py-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                     >
-                        Back to Registrations
+                        Back to Admin Dashboard
                     </button>
                 </div>
             </div>
@@ -389,12 +389,12 @@ export default function DynamicFieldsPage() {
                     <button
                         onClick={() =>
                             router.push(
-                                "/admin/registrations"
+                                "/admin"
                             )
                         }
                         className="text-sm text-slate-500 hover:text-slate-900 mb-4"
                     >
-                        ← Back to Registrations
+                        ← Back to Admin Dashboard
                     </button>
 
                     <div className="flex items-start justify-between gap-6">
@@ -475,12 +475,12 @@ export default function DynamicFieldsPage() {
                                     {/* <button
                                         onClick={() =>
                                             router.push(
-                                                "/admin/registrations"
+                                                "/admin"
                                             )
                                         }
                                         className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50"
                                     >
-                                        Back to Registrations
+                                        Back to Admin Dashboard
                                     </button> */}
                                 </div>
                             </div>
