@@ -132,13 +132,10 @@ export default function AdminDashboard() {
                                 type="button"
                                 className="flex w-full items-center gap-3 rounded-xl bg-cyan-400 px-4 py-3 text-left text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/20"
                             >
-                                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#0b1f33]/10 text-xs">
-                                    01
-                                </span>
                                 Dashboard
                             </button>
 
-                            <button
+                            {/* <button
                                 type="button"
                                 onClick={() =>
                                     document
@@ -153,7 +150,7 @@ export default function AdminDashboard() {
                                     02
                                 </span>
                                 Registrations
-                            </button>
+                            </button> */}
 
                             <button
                                 type="button"
@@ -164,21 +161,18 @@ export default function AdminDashboard() {
                                 }
                                 className="mt-1 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
                             >
-                                <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/15 text-xs text-slate-400">
-                                    03
-                                </span>
                                 Create Registration
                             </button>
                         </nav>
 
-                        <button
+                        {/* <button
                             type="button"
                             onClick={() => router.push("/")}
                             className="mt-8 flex items-center justify-between rounded-xl border border-white/15 px-4 py-3 text-left text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white lg:mt-auto"
                         >
                             <span>View Supplier Portal</span>
                             <span aria-hidden="true">↗</span>
-                        </button>
+                        </button> */}
                     </div>
                 </aside>
 
