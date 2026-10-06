@@ -285,6 +285,26 @@ export default function DynamicFieldsPage() {
 
         setFields(cleanedFields);
 
+        if (!registration) {
+            return;
+        }
+
+        if (registration.registrationType === "closed") {
+            router.push(
+                `/admin/registrations/${id}/invitations`
+            );
+
+            return;
+        }
+
+        if (registration.registrationType === "hybrid") {
+            router.push(
+                `/admin/registrations/${id}/requests`
+            );
+
+            return;
+        }
+
         setSaved(true);
 
         window.scrollTo({
@@ -687,14 +707,14 @@ export default function DynamicFieldsPage() {
                                             )
                                         }
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${field.required
-                                                ? "bg-indigo-600"
-                                                : "bg-slate-300"
+                                            ? "bg-indigo-600"
+                                            : "bg-slate-300"
                                             }`}
                                     >
                                         <span
                                             className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${field.required
-                                                    ? "translate-x-6"
-                                                    : "translate-x-1"
+                                                ? "translate-x-6"
+                                                : "translate-x-1"
                                                 }`}
                                         />
                                     </button>
