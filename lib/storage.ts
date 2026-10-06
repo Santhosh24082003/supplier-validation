@@ -40,6 +40,16 @@ function getInvitationKey(
     return `registration-invitations-${registrationId}`;
 }
 
+export function createSupplierAccessCode() {
+    const randomValues = new Uint32Array(1);
+
+    crypto.getRandomValues(randomValues);
+
+    return String(
+        100000 + (randomValues[0] % 900000)
+    );
+}
+
 export function getSupplierInvitations(
     registrationId: string
 ): SupplierInvitation[] {
@@ -52,6 +62,39 @@ export function getSupplierInvitations(
     );
 
     return data ? JSON.parse(data) : [];
+}
+
+export function ensureSupplierInvitationCodes(
+    registrationId: string
+): SupplierInvitation[] {
+    const invitations = getSupplierInvitations(
+        registrationId
+    );
+
+    const updatedInvitations = invitations.map(
+        (invitation) =>
+            invitation.accessCode
+                ? invitation
+                : {
+                    ...invitation,
+                    accessCode: createSupplierAccessCode(),
+                }
+    );
+
+    if (
+        updatedInvitations.some(
+            (invitation, index) =>
+                invitation.accessCode !==
+                invitations[index].accessCode
+        )
+    ) {
+        localStorage.setItem(
+            getInvitationKey(registrationId),
+            JSON.stringify(updatedInvitations)
+        );
+    }
+
+    return updatedInvitations;
 }
 
 export function saveSupplierInvitation(

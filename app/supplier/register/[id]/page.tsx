@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
     getRegistrations,
     getSupplierInvitations,
+    updateSupplierInvitation,
     getSupplierAccessRequests,
     saveSupplierAccessRequest,
 } from "@/lib/storage";
@@ -82,6 +83,9 @@ export default function SupplierRegistrationPage() {
         useState(true);
 
     const [email, setEmail] =
+        useState("");
+
+    const [accessCode, setAccessCode] =
         useState("");
 
     const [companyName, setCompanyName] =
@@ -156,9 +160,20 @@ export default function SupplierRegistrationPage() {
         const cleanEmail =
             email.trim().toLowerCase();
 
+        const cleanAccessCode =
+            accessCode.trim();
+
         if (!cleanEmail) {
             setError(
                 "Please enter your email address."
+            );
+
+            return;
+        }
+
+        if (!/^\d{6}$/.test(cleanAccessCode)) {
+            setError(
+                "Enter the six-digit invitation access code."
             );
 
             return;
@@ -171,7 +186,9 @@ export default function SupplierRegistrationPage() {
             invitations.find(
                 (item) =>
                     item.email.toLowerCase() ===
-                    cleanEmail
+                    cleanEmail &&
+                    item.accessCode === cleanAccessCode &&
+                    item.status === "invited"
             );
 
         if (!invitation) {
@@ -181,6 +198,12 @@ export default function SupplierRegistrationPage() {
 
             return;
         }
+
+        updateSupplierInvitation(
+            id,
+            invitation.id,
+            "used"
+        );
 
         setAccessGranted(true);
 
@@ -376,10 +399,10 @@ export default function SupplierRegistrationPage() {
                         </h1>
 
                         <p className="mt-3 text-sm leading-6 text-slate-500">
-                            This registration is
-                            invitation-only. Enter the
-                            email address that was invited
-                            by the administrator.
+                            This registration is invitation-only.
+                            Enter the invited email and the
+                            six-digit access code provided by
+                            the administrator.
                         </p>
 
                         <form
@@ -403,6 +426,26 @@ export default function SupplierRegistrationPage() {
                                     }
                                     placeholder="supplier@company.com"
                                     className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700">
+                                    Invitation Access Code
+                                </label>
+
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={accessCode}
+                                    onChange={(event) =>
+                                        setAccessCode(
+                                            event.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="123456"
+                                    className="w-full rounded-xl border border-slate-300 px-4 py-3 tracking-[0.3em] outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                                 />
                             </div>
 

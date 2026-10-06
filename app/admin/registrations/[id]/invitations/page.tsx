@@ -4,7 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import {
-    getSupplierInvitations,
+    createSupplierAccessCode,
+    ensureSupplierInvitationCodes,
     saveSupplierInvitation,
 } from "@/lib/storage";
 
@@ -25,9 +26,12 @@ export default function InvitationsPage() {
 
     const [copied, setCopied] = useState(false);
 
+    const [copiedInvitationId, setCopiedInvitationId] =
+        useState("");
+
     useEffect(() => {
         setInvitations(
-            getSupplierInvitations(id)
+            ensureSupplierInvitationCodes(id)
         );
     }, [id]);
 
@@ -39,6 +43,23 @@ export default function InvitationsPage() {
         setCopied(true);
 
         setTimeout(() => setCopied(false), 2000);
+    }
+
+    async function copyInvitationDetails(
+        invitation: SupplierInvitation
+    ) {
+        const link =
+            `${window.location.origin}/supplier/register/${id}`;
+
+        await navigator.clipboard.writeText(
+            `Supplier registration link: ${link}\n` +
+            `Email: ${invitation.email}\n` +
+            `Access code: ${invitation.accessCode}`
+        );
+
+        setCopiedInvitationId(invitation.id);
+
+        setTimeout(() => setCopiedInvitationId(""), 2000);
     }
 
     function handleSubmit(
@@ -81,12 +102,16 @@ export default function InvitationsPage() {
             return;
         }
 
+        const accessCode = createSupplierAccessCode();
+
         const invitation: SupplierInvitation = {
             id: crypto.randomUUID(),
 
             registrationId: id,
 
             email: cleanEmail,
+
+            accessCode,
 
             status: "invited",
 
@@ -218,7 +243,7 @@ export default function InvitationsPage() {
                                         key={
                                             invitation.id
                                         }
-                                        className="flex items-center justify-between gap-4 px-6 py-4"
+                                        className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
                                     >
                                         <div>
                                             <p className="font-medium text-slate-900">
@@ -233,13 +258,33 @@ export default function InvitationsPage() {
                                                     invitation.createdAt
                                                 ).toLocaleDateString()}
                                             </p>
+
+                                            <p className="mt-1 text-xs font-semibold text-indigo-600">
+                                                Access code: {invitation.accessCode}
+                                            </p>
                                         </div>
 
-                                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                            {
-                                                invitation.status
-                                            }
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    copyInvitationDetails(
+                                                        invitation
+                                                    )
+                                                }
+                                                className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                {copiedInvitationId === invitation.id
+                                                    ? "Copied"
+                                                    : "Copy invite"}
+                                            </button>
+
+                                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                {
+                                                    invitation.status
+                                                }
+                                            </span>
+                                        </div>
                                     </div>
                                 )
                             )}

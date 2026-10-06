@@ -28,6 +28,8 @@ export interface SupplierInvitation {
 
     email: string;
 
+    accessCode: string;
+
     status: "invited" | "used";
 
     createdAt: string;
