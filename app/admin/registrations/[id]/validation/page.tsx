@@ -539,9 +539,9 @@ export default function ValidationPage() {
                             <h2 className="text-xl font-semibold text-slate-900">
                                 Document Validation
                             </h2>
-                            <p className="mt-1 text-sm text-slate-500">
+                            {/* <p className="mt-1 text-sm text-slate-500">
                                 Manual metadata checks performed by the frontend.
-                            </p>
+                            </p> */}
                         </div>
                         <p className="text-sm font-medium text-slate-500">
                             {documentResults.length} required documents
@@ -678,9 +678,9 @@ export default function ValidationPage() {
                     <h2 className="text-xl font-semibold text-slate-900">
                         Data Matching
                     </h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    {/* <p className="mt-2 text-sm text-slate-500">
                         Company names from GST, bank, and other documents are compared after normalizing case and spaces.
-                    </p>
+                    </p> */}
 
                     <div className="mt-5 rounded-xl border border-slate-200 p-4">
                         <div className="flex items-center justify-between gap-4">
