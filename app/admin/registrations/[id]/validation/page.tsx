@@ -11,6 +11,7 @@ import {
     isRuleEnabled,
 } from "@/lib/rules";
 import type { RegistrationRule } from "@/lib/rules";
+import { calculateValidationScore } from "@/lib/validation-engine";
 
 interface Registration {
     id: string;
@@ -53,6 +54,8 @@ interface DocumentResult {
     label: string;
     document: StoredDocument | undefined;
     metadataComplete: boolean;
+    metadataFieldCount: number;
+    completedMetadataFieldCount: number;
     expiryDateRequired: boolean;
     expired: boolean;
     expiryDateMissing: boolean;
@@ -116,6 +119,48 @@ function StatusBadge({ status }: { status: CheckStatus }) {
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
             {status}
         </span>
+    );
+}
+
+function OutcomeBadge({
+    outcome,
+}: {
+    outcome: "Approved" | "Review Required" | "Rejected" | "Pending";
+}) {
+    const className =
+        outcome === "Approved"
+            ? "bg-emerald-50 text-emerald-700"
+            : outcome === "Rejected"
+                ? "bg-red-50 text-red-700"
+                : outcome === "Pending"
+                    ? "bg-slate-100 text-slate-600"
+                    : "bg-amber-50 text-amber-700";
+
+    return (
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+            {outcome}
+        </span>
+    );
+}
+
+function ScoreItem({
+    label,
+    score,
+    maximum,
+}: {
+    label: string;
+    score: number;
+    maximum: number;
+}) {
+    return (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-medium text-slate-500">
+                {label}
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-950">
+                {score}/{maximum}
+            </p>
+        </div>
     );
 }
 
@@ -230,16 +275,20 @@ export default function ValidationPage() {
             const document = documents.find(
                 (item) => item.key === requiredDocument.key
             );
-            const metadataComplete =
-                Boolean(document) &&
-                requiredDocument.metadataFields.every(
+            const metadataFieldCount =
+                requiredDocument.metadataFields.length;
+            const completedMetadataFieldCount =
+                requiredDocument.metadataFields.filter(
                     (field) =>
                         Boolean(
                             document?.metadata?.[
                                 field.key
                             ]?.trim()
                         )
-                );
+                ).length;
+            const metadataComplete =
+                Boolean(document) &&
+                completedMetadataFieldCount === metadataFieldCount;
             const expiryDate =
                 document?.metadata?.expiryDate;
             const requiresExpiryDate =
@@ -280,6 +329,8 @@ export default function ValidationPage() {
                 label: requiredDocument.label,
                 document,
                 metadataComplete,
+                metadataFieldCount,
+                completedMetadataFieldCount,
                 expiryDateRequired:
                     requiresExpiryDate && expiryRuleEnabled,
                 expired,
@@ -289,9 +340,6 @@ export default function ValidationPage() {
             };
         });
 
-    const hasFailedDocument = documentResults.some(
-        (result) => result.status === "Failed"
-    );
     const hasReviewDocument = documentResults.some(
         (result) => result.status === "Review required"
     );
@@ -348,7 +396,9 @@ export default function ValidationPage() {
         return Boolean(result?.document) &&
             Boolean(result?.metadataComplete);
     };
-    const ruleResults = rules
+    const ruleResults: Array<
+        RegistrationRule & { status: CheckStatus }
+    > = rules
         .filter(
             (rule) =>
                 rule.enabled && rule.id !== "gst-format"
@@ -419,15 +469,35 @@ export default function ValidationPage() {
             };
         });
 
-    const hasFailedRule = ruleResults.some(
-        (rule) => rule.status === "Failed"
-    );
-    const overallStatus: CheckStatus =
-        hasFailedDocument || hasFailedRule
-            ? "Failed"
-            : hasReviewDocument
-                ? "Review required"
-                : "Passed";
+    const completedRequiredFieldCount =
+        registration.requiredFields.filter(
+            (fieldKey) =>
+                Boolean(
+                    supplierRegistration?.basicInformation?.[
+                        fieldKey
+                    ]?.trim()
+                )
+        ).length;
+    const scoreBreakdown = calculateValidationScore({
+        hasSupplierSubmission: Boolean(supplierRegistration),
+        requiredFieldCount: registration.requiredFields.length,
+        completedRequiredFieldCount,
+        documents: documentResults.map((result) => ({
+            uploaded: Boolean(result.document),
+            metadataFieldCount: result.metadataFieldCount,
+            completedMetadataFieldCount:
+                result.completedMetadataFieldCount,
+            expired: result.expired,
+            expiryDateRequired: result.expiryDateRequired,
+            companyMatches: result.companyMatches,
+        })),
+        rules: ruleResults,
+        hasReviewRequired:
+            hasReviewDocument ||
+            ruleResults.some(
+                (rule) => rule.status === "Review required"
+            ),
+    });
 
     return (
         <main className="min-h-screen bg-slate-50 px-6 py-8">
@@ -457,9 +527,57 @@ export default function ValidationPage() {
                         <span className="text-sm font-medium text-slate-500">
                             Overall result
                         </span>
-                        <StatusBadge status={overallStatus} />
+                        <OutcomeBadge outcome={scoreBreakdown.outcome} />
                     </div>
                 </div>
+
+                <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-indigo-600">
+                                Validation Score
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Weighted result from the enabled validation checks.
+                            </p>
+                        </div>
+
+                        <div className="text-left sm:text-right">
+                            <p className="text-4xl font-bold text-slate-950">
+                                {scoreBreakdown.total}/100
+                            </p>
+                            <OutcomeBadge outcome={scoreBreakdown.outcome} />
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                        <ScoreItem
+                            label="Company information"
+                            score={scoreBreakdown.companyInformation}
+                            maximum={25}
+                        />
+                        <ScoreItem
+                            label="Required documents"
+                            score={scoreBreakdown.requiredDocuments}
+                            maximum={25}
+                        />
+                        <ScoreItem
+                            label="Document metadata"
+                            score={scoreBreakdown.documentMetadata}
+                            maximum={20}
+                        />
+                        <ScoreItem
+                            label="Data matching"
+                            score={scoreBreakdown.dataMatching}
+                            maximum={20}
+                        />
+                        <ScoreItem
+                            label="Business rules"
+                            score={scoreBreakdown.businessRules}
+                            maximum={10}
+                        />
+                    </div>
+                </section>
 
                 {!supplierRegistration && (
                     <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
@@ -716,10 +834,6 @@ export default function ValidationPage() {
                         </div>
                     </div>
                 </section>
-
-                <p className="mt-6 text-xs leading-5 text-slate-500">
-                    Frontend-only validation checks the uploaded file, manually entered metadata, expiry dates, and name consistency. It does not prove that a file is authentic or that its contents match the selected document type.
-                </p>
             </div>
         </main>
     );
