@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-import { getRegistrations } from "@/lib/storage";
+import {
+    getRegistrations,
+    updateRegistrationApprovalStatus,
+} from "@/lib/storage";
 import { getRequiredDocuments } from "@/lib/document-requirements";
 import {
     getRegistrationRules,
@@ -48,6 +51,8 @@ type CheckStatus =
     | "Review required"
     | "Failed"
     | "Not applicable";
+
+type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface DocumentResult {
     key: string;
@@ -143,6 +148,25 @@ function OutcomeBadge({
     );
 }
 
+function ApprovalStatusBadge({
+    status,
+}: {
+    status: ApprovalStatus;
+}) {
+    const className =
+        status === "approved"
+            ? "bg-emerald-50 text-emerald-700"
+            : status === "rejected"
+                ? "bg-red-50 text-red-700"
+                : "bg-slate-100 text-slate-600";
+
+    return (
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+            {status}
+        </span>
+    );
+}
+
 function ScoreItem({
     label,
     score,
@@ -179,6 +203,8 @@ export default function ValidationPage() {
         useState<DynamicField[]>([]);
     const [rules, setRules] =
         useState<RegistrationRule[]>([]);
+    const [approvalStatus, setApprovalStatus] =
+        useState<ApprovalStatus>("pending");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -192,6 +218,9 @@ export default function ValidationPage() {
         }
 
         setRegistration(currentRegistration);
+        setApprovalStatus(
+            currentRegistration.approvalStatus || "pending"
+        );
         setRules(getRegistrationRules(id));
 
         const savedSupplierData = localStorage.getItem(
@@ -222,6 +251,13 @@ export default function ValidationPage() {
 
         setLoading(false);
     }, [id]);
+
+    function handleApprovalStatusChange(
+        status: "approved" | "rejected"
+    ) {
+        updateRegistrationApprovalStatus(id, status);
+        setApprovalStatus(status);
+    }
 
     if (loading) {
         return (
@@ -530,6 +566,41 @@ export default function ValidationPage() {
                         <OutcomeBadge outcome={scoreBreakdown.outcome} />
                     </div>
                 </div>
+
+                <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-indigo-600">
+                                Admin Decision
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                                This status is independent of the validation score.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                            <ApprovalStatusBadge status={approvalStatus} />
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    handleApprovalStatusChange("approved")
+                                }
+                                className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                            >
+                                Approve
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    handleApprovalStatusChange("rejected")
+                                }
+                                className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                            >
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </section>
 
                 <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

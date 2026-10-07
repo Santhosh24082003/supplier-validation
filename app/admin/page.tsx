@@ -31,6 +31,10 @@ function getRegistrationState(registration: Registration) {
     return "Active";
 }
 
+function getApprovalStatus(registration: Registration) {
+    return registration.approvalStatus || "pending";
+}
+
 export default function AdminDashboard() {
     const router = useRouter();
 
@@ -305,6 +309,16 @@ export default function AdminDashboard() {
                                                                             }`}
                                                                     >
                                                                         {state}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalStatus(registration) === "approved"
+                                                                            ? "bg-emerald-100 text-emerald-800"
+                                                                            : getApprovalStatus(registration) === "rejected"
+                                                                                ? "bg-red-100 text-red-800"
+                                                                                : "bg-slate-100 text-slate-600"
+                                                                            }`}
+                                                                    >
+                                                                        {getApprovalStatus(registration)}
                                                                     </span>
                                                                 </div>
 

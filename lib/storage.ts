@@ -30,6 +30,27 @@ export function saveRegistration(
     );
 }
 
+export function updateRegistrationApprovalStatus(
+    registrationId: string,
+    approvalStatus: "pending" | "approved" | "rejected"
+) {
+    const existing = getRegistrations();
+
+    const updated = existing.map((registration) =>
+        registration.id === registrationId
+            ? {
+                ...registration,
+                approvalStatus,
+            }
+            : registration
+    );
+
+    localStorage.setItem(
+        REGISTRATIONS_KEY,
+        JSON.stringify(updated)
+    );
+}
+
 /* -------------------------------- */
 /* CLOSED REGISTRATION INVITATIONS */
 /* -------------------------------- */

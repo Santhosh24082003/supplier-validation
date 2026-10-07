@@ -18,6 +18,11 @@ export interface Registration {
 
     requiredFields: string[];
 
+    approvalStatus?:
+        | "pending"
+        | "approved"
+        | "rejected";
+
     createdAt: string;
 }
 
