@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 import {
     getRegistrations,
     getSupplierAccessRequests,
-    getSupplierInvitations,
 } from "@/lib/storage";
 
 import { Registration } from "@/types/registration";
 
 interface RegistrationSummary {
     registration: Registration;
-    invitationCount: number;
     pendingRequestCount: number;
 }
 
@@ -49,10 +47,6 @@ export default function AdminDashboard() {
         setSummaries(
             registrations.map((registration) => ({
                 registration,
-                invitationCount:
-                    getSupplierInvitations(
-                        registration.id
-                    ).length,
                 pendingRequestCount:
                     getSupplierAccessRequests(
                         registration.id
@@ -280,7 +274,6 @@ export default function AdminDashboard() {
                                     {summaries.map(
                                         ({
                                             registration,
-                                            invitationCount,
                                             pendingRequestCount: pendingCount,
                                         }) => {
                                             const state =
@@ -348,22 +341,13 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/70">
+                                                    <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/70">
                                                         <div className="p-4">
                                                             <p className="text-xs font-medium text-slate-500">
                                                                 Basic fields
                                                             </p>
                                                             <p className="mt-1 text-lg font-semibold text-slate-950">
                                                                 {registration.requiredFields.length}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="p-4">
-                                                            <p className="text-xs font-medium text-slate-500">
-                                                                Invited
-                                                            </p>
-                                                            <p className="mt-1 text-lg font-semibold text-slate-950">
-                                                                {invitationCount}
                                                             </p>
                                                         </div>
 
