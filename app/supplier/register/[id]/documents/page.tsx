@@ -10,6 +10,8 @@ import { useParams, useRouter } from "next/navigation";
 
 import { getRegistrations } from "@/lib/storage";
 import { getRequiredDocuments } from "@/lib/document-requirements";
+import { getRegistrationRules } from "@/lib/rules";
+import type { RegistrationRule } from "@/lib/rules";
 
 interface Registration {
     id: string;
@@ -26,6 +28,10 @@ interface StoredDocument {
     dataUrl: string;
     uploadedAt: string;
     metadata: Record<string, string>;
+}
+
+interface SavedSupplierRegistration {
+    basicInformation?: Record<string, string>;
 }
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
@@ -47,6 +53,10 @@ export default function ValidationPage() {
         useState<Registration | null>(null);
     const [documents, setDocuments] =
         useState<StoredDocument[]>([]);
+    const [rules, setRules] =
+        useState<RegistrationRule[]>([]);
+    const [purchaseValue, setPurchaseValue] =
+        useState(0);
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -62,6 +72,23 @@ export default function ValidationPage() {
         }
 
         setRegistration(currentRegistration);
+        setRules(getRegistrationRules(id));
+
+        const savedSupplierData = localStorage.getItem(
+            `supplier-registration-${id}`
+        );
+
+        if (savedSupplierData) {
+            const savedSupplierRegistration =
+                JSON.parse(savedSupplierData) as SavedSupplierRegistration;
+
+            setPurchaseValue(
+                Number(
+                    savedSupplierRegistration.basicInformation
+                        ?.expectedPurchaseValue || 0
+                )
+            );
+        }
 
         const savedDocuments = localStorage.getItem(
             getDocumentsKey(id)
@@ -75,7 +102,11 @@ export default function ValidationPage() {
     }, [id]);
 
     const requiredDocuments = registration
-        ? getRequiredDocuments(registration.supplierCategory)
+        ? getRequiredDocuments(
+            registration.supplierCategory,
+            rules,
+            purchaseValue
+        )
         : [];
 
     function saveDocuments(
@@ -395,7 +426,7 @@ export default function ValidationPage() {
 
                     {saved && (
                         <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                            All required documents are saved 
+                            All required documents are saved
                         </div>
                     )}
 

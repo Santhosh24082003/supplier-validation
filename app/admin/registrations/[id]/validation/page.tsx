@@ -5,11 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 
 import { getRegistrations } from "@/lib/storage";
 import { getRequiredDocuments } from "@/lib/document-requirements";
+import {
+    getRegistrationRules,
+    getRule,
+    isRuleEnabled,
+    isValidGstNumber,
+} from "@/lib/rules";
+import type { RegistrationRule } from "@/lib/rules";
 
 interface Registration {
     id: string;
     name: string;
     supplierCategory: string;
+    requiredFields: string[];
 }
 
 interface DynamicField {
@@ -119,6 +127,8 @@ export default function ValidationPage() {
         useState<StoredDocument[]>([]);
     const [dynamicFields, setDynamicFields] =
         useState<DynamicField[]>([]);
+    const [rules, setRules] =
+        useState<RegistrationRule[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -132,6 +142,7 @@ export default function ValidationPage() {
         }
 
         setRegistration(currentRegistration);
+        setRules(getRegistrationRules(id));
 
         const savedSupplierData = localStorage.getItem(
             `supplier-registration-${id}`
@@ -185,14 +196,30 @@ export default function ValidationPage() {
     }
 
     const requiredDocuments = getRequiredDocuments(
-        registration.supplierCategory
+        registration.supplierCategory,
+        rules,
+        Number(
+            supplierRegistration?.basicInformation
+                ?.expectedPurchaseValue || 0
+        )
     );
     const expectedCompanyName =
         supplierRegistration?.basicInformation?.companyName ||
         supplierRegistration?.companyName ||
         "";
     const today = new Date().toISOString().slice(0, 10);
-
+    const categoryDocumentsRuleEnabled = isRuleEnabled(
+        rules,
+        "category-documents"
+    );
+    const expiryRuleEnabled = isRuleEnabled(
+        rules,
+        "document-expiry"
+    );
+    const companyMatchRuleEnabled = isRuleEnabled(
+        rules,
+        "company-name-match"
+    );
     const documentResults: DocumentResult[] =
         requiredDocuments.map((requiredDocument) => {
             const document = documents.find(
@@ -230,13 +257,16 @@ export default function ValidationPage() {
             let status: CheckStatus = "Passed";
 
             if (
-                !document ||
-                !metadataComplete ||
-                expiryDateMissing ||
-                expired
+                (categoryDocumentsRuleEnabled && !document) ||
+                (Boolean(document) && !metadataComplete) ||
+                (expiryRuleEnabled &&
+                    (expiryDateMissing || expired))
             ) {
                 status = "Failed";
-            } else if (companyMatches === false) {
+            } else if (
+                companyMatchRuleEnabled &&
+                companyMatches === false
+            ) {
                 status = "Review required";
             }
 
@@ -245,7 +275,8 @@ export default function ValidationPage() {
                 label: requiredDocument.label,
                 document,
                 metadataComplete,
-                expiryDateRequired: requiresExpiryDate,
+                expiryDateRequired:
+                    requiresExpiryDate && expiryRuleEnabled,
                 expired,
                 expiryDateMissing,
                 companyMatches,
@@ -259,11 +290,6 @@ export default function ValidationPage() {
     const hasReviewDocument = documentResults.some(
         (result) => result.status === "Review required"
     );
-    const overallStatus: CheckStatus = hasFailedDocument
-        ? "Failed"
-        : hasReviewDocument
-            ? "Review required"
-            : "Passed";
     const documentNames = documentResults
         .map((result) => getDocumentCompanyName(result.document))
         .filter(Boolean);
@@ -274,6 +300,124 @@ export default function ValidationPage() {
         documentNames.every(
             (name) => normalize(name) === normalize(documentNames[0])
         );
+    const mandatoryFieldsPassed = registration.requiredFields.every(
+        (fieldKey) =>
+            Boolean(
+                supplierRegistration?.basicInformation?.[
+                    fieldKey
+                ]?.trim()
+            )
+    );
+    const gstRulePassed =
+        !registration.requiredFields.includes("taxId") ||
+        isValidGstNumber(
+            supplierRegistration?.basicInformation?.taxId || ""
+        );
+    const expiryRulePassed = documentResults.every(
+        (result) =>
+            !result.expiryDateRequired ||
+            (!result.expiryDateMissing && !result.expired)
+    );
+    const highValueRule = getRule(
+        rules,
+        "high-purchase-financial-documents"
+    );
+    const purchaseValue = Number(
+        supplierRegistration?.basicInformation
+            ?.expectedPurchaseValue || 0
+    );
+    const highValueRequiresFinancialDocuments =
+        isRuleEnabled(
+            rules,
+            "high-purchase-financial-documents"
+        ) &&
+        purchaseValue > (highValueRule?.threshold || 5000000);
+    const financialDocumentsPassed =
+        !highValueRequiresFinancialDocuments ||
+        ["balance-sheet", "income-statement"].every(
+            (key) =>
+                documents.some(
+                    (document) => document.key === key
+                )
+        );
+    const hasCompleteDocument = (documentKey: string) => {
+        const result = documentResults.find(
+            (item) => item.key === documentKey
+        );
+
+        return Boolean(result?.document) &&
+            Boolean(result?.metadataComplete);
+    };
+    const ruleResults = rules
+        .filter((rule) => rule.enabled)
+        .map((rule) => {
+            let passed = true;
+
+            if (rule.id === "mandatory-fields") {
+                passed = mandatoryFieldsPassed;
+            }
+
+            if (rule.id === "gst-format") {
+                passed = gstRulePassed;
+            }
+
+            if (rule.id === "category-documents") {
+                passed = documentResults.every(
+                    (result) =>
+                        Boolean(result.document) &&
+                        result.metadataComplete
+                );
+            }
+
+            if (rule.id === "document-expiry") {
+                passed = expiryRulePassed;
+            }
+
+            if (rule.id === "company-name-match") {
+                passed = namesMatch;
+            }
+
+            if (rule.id === "it-iso-certificate") {
+                passed =
+                    registration.supplierCategory !== "IT" ||
+                    hasCompleteDocument("iso-certificate");
+            }
+
+            if (rule.id === "construction-safety-certificate") {
+                passed =
+                    registration.supplierCategory !== "Construction" ||
+                    hasCompleteDocument("safety-certificate");
+            }
+
+            if (rule.id === "supplier-insurance") {
+                passed =
+                    ![
+                        "Manufacturing",
+                        "Construction",
+                        "Logistics",
+                    ].includes(registration.supplierCategory) ||
+                    hasCompleteDocument("insurance-certificate");
+            }
+
+            if (rule.id === "high-purchase-financial-documents") {
+                passed = financialDocumentsPassed;
+            }
+
+            return {
+                ...rule,
+                status: (passed ? "Passed" : "Failed") as CheckStatus,
+            };
+        });
+
+    const hasFailedRule = ruleResults.some(
+        (rule) => rule.status === "Failed"
+    );
+    const overallStatus: CheckStatus =
+        hasFailedDocument || hasFailedRule
+            ? "Failed"
+            : hasReviewDocument
+                ? "Review required"
+                : "Passed";
 
     return (
         <main className="min-h-screen bg-slate-50 px-6 py-8">
@@ -475,6 +619,47 @@ export default function ValidationPage() {
                                     </div>
                                 )}
                             </article>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-xl font-semibold text-slate-900">
+                                Business Rule Results
+                            </h2>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Rules configured for this registration.
+                            </p>
+                        </div>
+                        <p className="text-sm font-medium text-slate-500">
+                            {ruleResults.length} enabled
+                        </p>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                        {ruleResults.map((rule) => (
+                            <div
+                                key={rule.id}
+                                className="flex flex-col gap-2 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div>
+                                    <p className="font-semibold text-slate-900">
+                                        {rule.label}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        {rule.description}
+                                    </p>
+                                    {rule.id ===
+                                        "high-purchase-financial-documents" && (
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Threshold: INR {rule.threshold?.toLocaleString("en-IN")}
+                                            </p>
+                                        )}
+                                </div>
+                                <StatusBadge status={rule.status} />
+                            </div>
                         ))}
                     </div>
                 </section>

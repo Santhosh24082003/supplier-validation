@@ -1,3 +1,9 @@
+import {
+    getRule,
+    isRuleEnabled,
+    RegistrationRule,
+} from "@/lib/rules";
+
 export interface DocumentMetadataField {
     key: string;
     label: string;
@@ -130,36 +136,66 @@ const insuranceDocument: RequiredDocument = {
     ],
 };
 
+const isoDocument: RequiredDocument = {
+    key: "iso-certificate",
+    label: "ISO 27001 Certificate",
+    description: "Information security certification for IT suppliers.",
+    metadataFields: certificationFields,
+};
+
+const safetyDocument: RequiredDocument = {
+    key: "safety-certificate",
+    label: "Safety Certificate",
+    description: "Required workplace or construction safety certification.",
+    metadataFields: certificationFields,
+};
+
+const financialDocuments: RequiredDocument[] = [
+    {
+        key: "balance-sheet",
+        label: "Balance Sheet",
+        description: "Most recent balance sheet for high-value purchases.",
+        metadataFields: [
+            companyNameField,
+            {
+                key: "financialYear",
+                label: "Financial Year",
+                type: "text",
+                placeholder: "2025-2026",
+            },
+        ],
+    },
+    {
+        key: "income-statement",
+        label: "Income Statement",
+        description: "Most recent income statement for high-value purchases.",
+        metadataFields: [
+            companyNameField,
+            {
+                key: "financialYear",
+                label: "Financial Year",
+                type: "text",
+                placeholder: "2025-2026",
+            },
+        ],
+    },
+];
+
 const documentsByCategory: Record<
     string,
     RequiredDocument[]
 > = {
     IT: [
         ...commonDocuments,
-        {
-            key: "iso-certificate",
-            label: "ISO Certificate",
-            description: "Relevant information security or quality certification.",
-            metadataFields: certificationFields,
-        },
     ],
     Manufacturing: [
         ...commonDocuments,
-        insuranceDocument,
     ],
     Construction: [
         ...commonDocuments,
-        insuranceDocument,
-        {
-            key: "safety-certificate",
-            label: "Safety Certificate",
-            description: "Required workplace or construction safety certification.",
-            metadataFields: certificationFields,
-        },
     ],
     Logistics: [
         ...commonDocuments,
-        insuranceDocument,
         {
             key: "transport-license",
             label: "Transport License",
@@ -179,7 +215,56 @@ const documentsByCategory: Record<
 };
 
 export function getRequiredDocuments(
-    supplierCategory: string
+    supplierCategory: string,
+    rules: RegistrationRule[] = [],
+    purchaseValue = 0
 ) {
-    return documentsByCategory[supplierCategory] || commonDocuments;
+    const categoryDocuments =
+        documentsByCategory[supplierCategory] || commonDocuments;
+    const categoryRuleDocuments: RequiredDocument[] = [];
+
+    if (
+        supplierCategory === "IT" &&
+        isRuleEnabled(rules, "it-iso-certificate")
+    ) {
+        categoryRuleDocuments.push(isoDocument);
+    }
+
+    if (
+        supplierCategory === "Construction" &&
+        isRuleEnabled(
+            rules,
+            "construction-safety-certificate"
+        )
+    ) {
+        categoryRuleDocuments.push(safetyDocument);
+    }
+
+    if (
+        ["Manufacturing", "Construction", "Logistics"].includes(
+            supplierCategory
+        ) &&
+        isRuleEnabled(rules, "supplier-insurance")
+    ) {
+        categoryRuleDocuments.push(insuranceDocument);
+    }
+    const highValueRule = getRule(
+        rules,
+        "high-purchase-financial-documents"
+    );
+    const requiresFinancialDocuments =
+        isRuleEnabled(
+            rules,
+            "high-purchase-financial-documents"
+        ) &&
+        purchaseValue > (highValueRule?.threshold || 5000000);
+
+    const requiredDocuments = [
+        ...categoryDocuments,
+        ...categoryRuleDocuments,
+    ];
+
+    return requiresFinancialDocuments
+        ? [...requiredDocuments, ...financialDocuments]
+        : requiredDocuments;
 }

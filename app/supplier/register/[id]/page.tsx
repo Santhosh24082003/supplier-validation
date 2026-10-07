@@ -17,6 +17,10 @@ import {
 } from "@/lib/storage";
 
 import { Registration } from "@/types/registration";
+import {
+    getRegistrationRules,
+    isRuleEnabled,
+} from "@/lib/rules";
 
 interface DynamicField {
     id: string;
@@ -45,7 +49,7 @@ interface SavedSupplierRegistration {
 
 const basicCompanyInformation: Record<
     string,
-    { label: string; type: "text" | "email" | "tel" }
+    { label: string; type: "text" | "email" | "tel" | "number" }
 > = {
     companyName: {
         label: "Company Name",
@@ -70,6 +74,10 @@ const basicCompanyInformation: Record<
     taxId: {
         label: "Tax / GST Number",
         type: "text",
+    },
+    expectedPurchaseValue: {
+        label: "Expected Purchase Value (INR)",
+        type: "number",
     },
 };
 
@@ -354,6 +362,10 @@ export default function SupplierRegistrationPage() {
 
         if (
             registration?.requiredFields.includes("taxId") &&
+            isRuleEnabled(
+                getRegistrationRules(id),
+                "gst-format"
+            ) &&
             !isValidGstNumber(basicInformation.taxId || "")
         ) {
             setGstError(
