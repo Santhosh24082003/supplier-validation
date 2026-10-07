@@ -51,6 +51,27 @@ export function updateRegistrationApprovalStatus(
     );
 }
 
+export function updateRegistrationRequiredFields(
+    registrationId: string,
+    requiredFields: string[]
+) {
+    const existing = getRegistrations();
+
+    const updated = existing.map((registration) =>
+        registration.id === registrationId
+            ? {
+                ...registration,
+                requiredFields,
+            }
+            : registration
+    );
+
+    localStorage.setItem(
+        REGISTRATIONS_KEY,
+        JSON.stringify(updated)
+    );
+}
+
 /* -------------------------------- */
 /* CLOSED REGISTRATION INVITATIONS */
 /* -------------------------------- */

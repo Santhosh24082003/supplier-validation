@@ -2,7 +2,10 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getRegistrations } from "@/lib/storage";
+import {
+    getRegistrations,
+    updateRegistrationRequiredFields,
+} from "@/lib/storage";
 
 interface DynamicField {
     id: string;
@@ -60,6 +63,19 @@ const fieldTypes = [
     },
 ];
 
+const basicFieldOptions = [
+    { key: "companyName", label: "Company Name" },
+    { key: "companyEmail", label: "Company Email" },
+    { key: "phone", label: "Phone Number" },
+    { key: "address", label: "Company Address" },
+    { key: "country", label: "Country" },
+    { key: "taxId", label: "Tax / GST Number" },
+    {
+        key: "expectedPurchaseValue",
+        label: "Expected Purchase Value (INR)",
+    },
+];
+
 export default function DynamicFieldsPage() {
     const params = useParams();
     const router = useRouter();
@@ -103,6 +119,32 @@ export default function DynamicFieldsPage() {
 
         setLoading(false);
     }, [id]);
+
+    function handleBasicFieldChange(fieldKey: string) {
+        setRegistration((currentRegistration) => {
+            if (!currentRegistration) {
+                return currentRegistration;
+            }
+
+            const requiredFields = currentRegistration.requiredFields.includes(
+                fieldKey
+            )
+                ? currentRegistration.requiredFields.filter(
+                    (currentField) => currentField !== fieldKey
+                )
+                : [
+                    ...currentRegistration.requiredFields,
+                    fieldKey,
+                ];
+
+            setSaved(false);
+
+            return {
+                ...currentRegistration,
+                requiredFields,
+            };
+        });
+    }
 
     function addField() {
         const newField: DynamicField = {
@@ -288,6 +330,11 @@ export default function DynamicFieldsPage() {
         if (!registration) {
             return;
         }
+
+        updateRegistrationRequiredFields(
+            id,
+            registration.requiredFields
+        );
 
         if (registration.registrationType === "closed") {
             router.push(
@@ -520,6 +567,50 @@ export default function DynamicFieldsPage() {
                         </p>
                     </div>
                 </div>
+
+                <section className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-100 px-6 py-5 sm:px-8">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h2 className="text-lg font-semibold text-slate-900">
+                                    Basic Fields
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Choose the standard information suppliers must provide.
+                                </p>
+                            </div>
+                            <span className="text-sm text-slate-500">
+                                {registration.requiredFields.length} selected
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-3 p-6 sm:grid-cols-2 sm:p-8">
+                        {basicFieldOptions.map((field) => (
+                            <label
+                                key={field.key}
+                                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition ${registration.requiredFields.includes(field.key)
+                                    ? "border-blue-300 bg-blue-50 text-blue-950"
+                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                    }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={registration.requiredFields.includes(
+                                        field.key
+                                    )}
+                                    onChange={() =>
+                                        handleBasicFieldChange(field.key)
+                                    }
+                                    className="h-4 w-4 rounded accent-blue-700"
+                                />
+                                <span className="text-sm font-medium">
+                                    {field.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </section>
 
                 {/* Sticky Action Header */}
                 <div className="sticky top-0 z-30 mb-6 bg-slate-50/95 backdrop-blur py-4 border-b border-slate-200">

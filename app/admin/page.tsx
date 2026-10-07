@@ -12,6 +12,7 @@ import { Registration } from "@/types/registration";
 
 interface RegistrationSummary {
     registration: Registration;
+    totalFieldCount: number;
     pendingRequestCount: number;
 }
 
@@ -45,16 +46,28 @@ export default function AdminDashboard() {
         const registrations = getRegistrations();
 
         setSummaries(
-            registrations.map((registration) => ({
-                registration,
-                pendingRequestCount:
-                    getSupplierAccessRequests(
-                        registration.id
-                    ).filter(
-                        (request) =>
-                            request.status === "pending"
-                    ).length,
-            }))
+            registrations.map((registration) => {
+                const savedFields = localStorage.getItem(
+                    `registration-fields-${registration.id}`
+                );
+                const dynamicFieldCount = savedFields
+                    ? JSON.parse(savedFields).length
+                    : 0;
+
+                return {
+                    registration,
+                    totalFieldCount:
+                        registration.requiredFields.length +
+                        dynamicFieldCount,
+                    pendingRequestCount:
+                        getSupplierAccessRequests(
+                            registration.id
+                        ).filter(
+                            (request) =>
+                                request.status === "pending"
+                        ).length,
+                };
+            })
         );
     }
 
@@ -303,7 +316,7 @@ export default function AdminDashboard() {
                                     {summaries.map(
                                         ({
                                             registration,
-                                            pendingRequestCount: pendingCount,
+                                            totalFieldCount,
                                         }) => {
                                             const state =
                                                 getRegistrationState(
@@ -372,22 +385,13 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/60">
+                                                    <div className="grid grid-cols-1 border-b border-slate-100 bg-slate-50/60">
                                                         <div className="p-4">
                                                             <p className="text-xs font-medium text-slate-500">
-                                                                Configured fields
+                                                                Total fields
                                                             </p>
                                                             <p className="mt-1 text-lg font-semibold text-slate-950">
-                                                                {registration.requiredFields.length}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="p-4">
-                                                            <p className="text-xs font-medium text-slate-500">
-                                                                Pending
-                                                            </p>
-                                                            <p className="mt-1 text-lg font-semibold text-slate-950">
-                                                                {pendingCount}
+                                                                {totalFieldCount}
                                                             </p>
                                                         </div>
                                                     </div>
