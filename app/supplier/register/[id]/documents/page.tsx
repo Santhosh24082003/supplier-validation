@@ -9,17 +9,12 @@ import {
 import { useParams, useRouter } from "next/navigation";
 
 import { getRegistrations } from "@/lib/storage";
+import { getRequiredDocuments } from "@/lib/document-requirements";
 
 interface Registration {
     id: string;
     name: string;
     supplierCategory: string;
-}
-
-interface RequiredDocument {
-    key: string;
-    label: string;
-    description: string;
 }
 
 interface StoredDocument {
@@ -30,88 +25,10 @@ interface StoredDocument {
     fileSize: number;
     dataUrl: string;
     uploadedAt: string;
+    metadata: Record<string, string>;
 }
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
-
-const commonDocuments: RequiredDocument[] = [
-    {
-        key: "gst-certificate",
-        label: "GST Certificate",
-        description: "Current tax registration certificate.",
-    },
-    {
-        key: "pan-card",
-        label: "PAN Card",
-        description: "Company or business PAN document.",
-    },
-    {
-        key: "company-registration",
-        label: "Company Registration",
-        description: "Certificate of incorporation or registration.",
-    },
-    {
-        key: "bank-document",
-        label: "Bank Document",
-        description: "Cancelled cheque or recent bank confirmation.",
-    },
-];
-
-const documentsByCategory: Record<
-    string,
-    RequiredDocument[]
-> = {
-    IT: [
-        ...commonDocuments,
-        {
-            key: "iso-certificate",
-            label: "ISO Certificate",
-            description: "Relevant information security or quality certification.",
-        },
-    ],
-    Manufacturing: [
-        ...commonDocuments,
-        {
-            key: "insurance-certificate",
-            label: "Insurance Certificate",
-            description: "Current business or product liability insurance.",
-        },
-    ],
-    Construction: [
-        ...commonDocuments,
-        {
-            key: "insurance-certificate",
-            label: "Insurance Certificate",
-            description: "Current business or contractor insurance.",
-        },
-        {
-            key: "safety-certificate",
-            label: "Safety Certificate",
-            description: "Required workplace or construction safety certification.",
-        },
-    ],
-    Logistics: [
-        ...commonDocuments,
-        {
-            key: "insurance-certificate",
-            label: "Insurance Certificate",
-            description: "Current goods-in-transit or business insurance.",
-        },
-        {
-            key: "transport-license",
-            label: "Transport License",
-            description: "Applicable transport or carrier operating license.",
-        },
-    ],
-    "Professional Services": [
-        ...commonDocuments,
-        {
-            key: "professional-certification",
-            label: "Professional Certification",
-            description: "Certification relevant to the services offered.",
-        },
-    ],
-};
 
 function getDocumentsKey(registrationId: string) {
     return `supplier-documents-${registrationId}`;
@@ -158,7 +75,7 @@ export default function ValidationPage() {
     }, [id]);
 
     const requiredDocuments = registration
-        ? documentsByCategory[registration.supplierCategory] || commonDocuments
+        ? getRequiredDocuments(registration.supplierCategory)
         : [];
 
     function saveDocuments(
@@ -172,8 +89,30 @@ export default function ValidationPage() {
         setSaved(false);
     }
 
+    function updateDocumentMetadata(
+        documentKey: string,
+        fieldKey: string,
+        value: string
+    ) {
+        saveDocuments(
+            documents.map((document) =>
+                document.key === documentKey
+                    ? {
+                        ...document,
+                        metadata: {
+                            ...(document.metadata || {}),
+                            [fieldKey]: value,
+                        },
+                    }
+                    : document
+            )
+        );
+    }
+
     function handleFileChange(
-        document: RequiredDocument,
+        document: ReturnType<
+            typeof getRequiredDocuments
+        >[number],
         event: ChangeEvent<HTMLInputElement>
     ) {
         const file = event.target.files?.[0];
@@ -210,6 +149,10 @@ export default function ValidationPage() {
                 fileSize: file.size,
                 dataUrl: reader.result,
                 uploadedAt: new Date().toISOString(),
+                metadata:
+                    documents.find(
+                        (item) => item.key === document.key
+                    )?.metadata || {},
             };
 
             saveDocuments([
@@ -246,11 +189,39 @@ export default function ValidationPage() {
                 )
         );
 
+        const missingMetadata = requiredDocuments.flatMap(
+            (requiredDocument) => {
+                const uploadedDocument = documents.find(
+                    (document) =>
+                        document.key === requiredDocument.key
+                );
+
+                return requiredDocument.metadataFields
+                    .filter(
+                        (field) =>
+                            !uploadedDocument?.metadata?.[
+                                field.key
+                            ]?.trim()
+                    )
+                    .map(
+                        (field) =>
+                            `${requiredDocument.label}: ${field.label}`
+                    );
+            }
+        );
+
         if (missingDocuments.length > 0) {
             setError(
                 `Upload all required documents before continuing. Missing: ${missingDocuments
                     .map((document) => document.label)
                     .join(", ")}.`
+            );
+            return;
+        }
+
+        if (missingMetadata.length > 0) {
+            setError(
+                `Complete all document information before continuing. Missing: ${missingMetadata.join(", ")}.`
             );
             return;
         }
@@ -374,6 +345,43 @@ export default function ValidationPage() {
                                             )}
                                         </div>
                                     </div>
+
+                                    {uploadedDocument && (
+                                        <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+                                            {document.metadataFields.map(
+                                                (field) => (
+                                                    <div
+                                                        key={field.key}
+                                                    >
+                                                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                                                            {field.label}
+                                                        </label>
+
+                                                        <input
+                                                            type={field.type}
+                                                            value={
+                                                                uploadedDocument
+                                                                    .metadata?.[
+                                                                field.key
+                                                                ] || ""
+                                                            }
+                                                            onChange={(event) =>
+                                                                updateDocumentMetadata(
+                                                                    document.key,
+                                                                    field.key,
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                            placeholder={
+                                                                field.placeholder
+                                                            }
+                                                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                                        />
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -387,7 +395,7 @@ export default function ValidationPage() {
 
                     {saved && (
                         <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                            All required documents are saved in this browser.
+                            All required documents are saved 
                         </div>
                     )}
 
