@@ -9,7 +9,6 @@ import {
     getRegistrationRules,
     getRule,
     isRuleEnabled,
-    isValidGstNumber,
 } from "@/lib/rules";
 import type { RegistrationRule } from "@/lib/rules";
 
@@ -43,7 +42,11 @@ interface StoredDocument {
     metadata?: Record<string, string>;
 }
 
-type CheckStatus = "Passed" | "Review required" | "Failed";
+type CheckStatus =
+    | "Passed"
+    | "Review required"
+    | "Failed"
+    | "Not applicable";
 
 interface DocumentResult {
     key: string;
@@ -105,7 +108,9 @@ function StatusBadge({ status }: { status: CheckStatus }) {
             ? "bg-emerald-50 text-emerald-700"
             : status === "Failed"
                 ? "bg-red-50 text-red-700"
-                : "bg-amber-50 text-amber-700";
+                : status === "Not applicable"
+                    ? "bg-slate-100 text-slate-600"
+                    : "bg-amber-50 text-amber-700";
 
     return (
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
@@ -308,11 +313,6 @@ export default function ValidationPage() {
                 ]?.trim()
             )
     );
-    const gstRulePassed =
-        !registration.requiredFields.includes("taxId") ||
-        isValidGstNumber(
-            supplierRegistration?.basicInformation?.taxId || ""
-        );
     const expiryRulePassed = documentResults.every(
         (result) =>
             !result.expiryDateRequired ||
@@ -349,16 +349,17 @@ export default function ValidationPage() {
             Boolean(result?.metadataComplete);
     };
     const ruleResults = rules
-        .filter((rule) => rule.enabled)
+        .filter(
+            (rule) =>
+                rule.enabled && rule.id !== "gst-format"
+        )
         .map((rule) => {
             let passed = true;
+            let applicable = true;
+            let status: CheckStatus = "Passed";
 
             if (rule.id === "mandatory-fields") {
                 passed = mandatoryFieldsPassed;
-            }
-
-            if (rule.id === "gst-format") {
-                passed = gstRulePassed;
             }
 
             if (rule.id === "category-documents") {
@@ -378,34 +379,43 @@ export default function ValidationPage() {
             }
 
             if (rule.id === "it-iso-certificate") {
+                applicable =
+                    registration.supplierCategory === "IT";
                 passed =
-                    registration.supplierCategory !== "IT" ||
                     hasCompleteDocument("iso-certificate");
             }
 
             if (rule.id === "construction-safety-certificate") {
+                applicable =
+                    registration.supplierCategory === "Construction";
                 passed =
-                    registration.supplierCategory !== "Construction" ||
                     hasCompleteDocument("safety-certificate");
             }
 
             if (rule.id === "supplier-insurance") {
+                applicable = [
+                    "Manufacturing",
+                    "Construction",
+                    "Logistics",
+                ].includes(registration.supplierCategory);
                 passed =
-                    ![
-                        "Manufacturing",
-                        "Construction",
-                        "Logistics",
-                    ].includes(registration.supplierCategory) ||
                     hasCompleteDocument("insurance-certificate");
             }
 
             if (rule.id === "high-purchase-financial-documents") {
+                applicable = highValueRequiresFinancialDocuments;
                 passed = financialDocumentsPassed;
+            }
+
+            if (!applicable) {
+                status = "Not applicable";
+            } else {
+                status = passed ? "Passed" : "Failed";
             }
 
             return {
                 ...rule,
-                status: (passed ? "Passed" : "Failed") as CheckStatus,
+                status,
             };
         });
 
