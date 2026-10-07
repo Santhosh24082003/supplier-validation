@@ -42,6 +42,7 @@ interface DocumentResult {
     label: string;
     document: StoredDocument | undefined;
     metadataComplete: boolean;
+    expiryDateRequired: boolean;
     expired: boolean;
     expiryDateMissing: boolean;
     companyMatches: boolean | null;
@@ -244,6 +245,7 @@ export default function ValidationPage() {
                 label: requiredDocument.label,
                 document,
                 metadataComplete,
+                expiryDateRequired: requiresExpiryDate,
                 expired,
                 expiryDateMissing,
                 companyMatches,
@@ -429,19 +431,21 @@ export default function ValidationPage() {
                                         label="Required information complete"
                                         passed={result.metadataComplete}
                                     />
-                                    <Check
-                                        label={
-                                            result.expiryDateMissing
-                                                ? "Expiry date missing"
-                                                : result.expired
-                                                    ? "Document expired"
-                                                    : "Document not expired"
-                                        }
-                                        passed={
-                                            !result.expiryDateMissing &&
-                                            !result.expired
-                                        }
-                                    />
+                                    {result.expiryDateRequired && (
+                                        <Check
+                                            label={
+                                                result.expiryDateMissing
+                                                    ? "Expiry date missing"
+                                                    : result.expired
+                                                        ? "Document expired"
+                                                        : "Document not expired"
+                                            }
+                                            passed={
+                                                !result.expiryDateMissing &&
+                                                !result.expired
+                                            }
+                                        />
+                                    )}
                                     <Check
                                         label={
                                             result.companyMatches === false
