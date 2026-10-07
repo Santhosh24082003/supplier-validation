@@ -178,9 +178,6 @@ export default function AdminDashboard() {
                                     Good morning, Admin
                                 </h2>
 
-                                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                                    Keep supplier onboarding moving with a clear view of every registration, invitation, and approval waiting for your attention.
-                                </p>
                             </div>
 
                             <div className="mt-6 flex gap-3 lg:mt-0">
