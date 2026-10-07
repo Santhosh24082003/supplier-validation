@@ -36,6 +36,13 @@ interface DynamicField {
     options: string[];
 }
 
+interface SavedSupplierRegistration {
+    email?: string;
+    companyName?: string;
+    basicInformation?: Record<string, string>;
+    values?: Record<string, string>;
+}
+
 const basicCompanyInformation: Record<
     string,
     { label: string; type: "text" | "email" | "tel" }
@@ -65,6 +72,12 @@ const basicCompanyInformation: Record<
         type: "text",
     },
 };
+
+function isValidGstNumber(value: string) {
+    return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(
+        value.trim().toUpperCase()
+    );
+}
 
 export default function SupplierRegistrationPage() {
     const params = useParams();
@@ -111,6 +124,9 @@ export default function SupplierRegistrationPage() {
     const [basicInformation, setBasicInformation] =
         useState<Record<string, string>>({});
 
+    const [gstError, setGstError] =
+        useState("");
+
     useEffect(() => {
         const registrations =
             getRegistrations();
@@ -138,6 +154,24 @@ export default function SupplierRegistrationPage() {
             setFields(
                 JSON.parse(savedFields)
             );
+        }
+
+        const savedRegistration = localStorage.getItem(
+            `supplier-registration-${id}`
+        );
+
+        if (savedRegistration) {
+            const savedData = JSON.parse(
+                savedRegistration
+            ) as SavedSupplierRegistration;
+
+            setEmail(savedData.email || "");
+            setCompanyName(savedData.companyName || "");
+            setBasicInformation(
+                savedData.basicInformation || {}
+            );
+            setValues(savedData.values || {});
+            setAccessGranted(true);
         }
 
         if (
@@ -316,6 +350,17 @@ export default function SupplierRegistrationPage() {
 
                 return;
             }
+        }
+
+        if (
+            registration?.requiredFields.includes("taxId") &&
+            !isValidGstNumber(basicInformation.taxId || "")
+        ) {
+            setGstError(
+                "Enter a valid 15-character GSTIN, for example 27ABCDE1234F1Z5."
+            );
+            setError("Please enter a valid GST number.");
+            return;
         }
 
         for (const field of fields) {
@@ -675,17 +720,61 @@ export default function SupplierRegistrationPage() {
                                                     fieldKey
                                                     ] || ""
                                                 }
-                                                onChange={(event) =>
+                                                maxLength={
+                                                    fieldKey === "taxId"
+                                                        ? 15
+                                                        : undefined
+                                                }
+                                                placeholder={
+                                                    fieldKey === "taxId"
+                                                        ? "27ABCDE1234F1Z5"
+                                                        : undefined
+                                                }
+                                                onChange={(event) => {
+                                                    const value =
+                                                        fieldKey === "taxId"
+                                                            ? event.target.value
+                                                                .toUpperCase()
+                                                                .replace(
+                                                                    /[^0-9A-Z]/g,
+                                                                    ""
+                                                                )
+                                                            : event.target.value;
+
                                                     setBasicInformation(
                                                         (current) => ({
                                                             ...current,
-                                                            [fieldKey]:
-                                                                event.target.value,
+                                                            [fieldKey]: value,
                                                         })
-                                                    )
-                                                }
+                                                    );
+
+                                                    if (
+                                                        fieldKey === "taxId"
+                                                    ) {
+                                                        setGstError(
+                                                            value &&
+                                                                !isValidGstNumber(
+                                                                    value
+                                                                )
+                                                                ? "GSTIN must be 15 characters, for example 27ABCDE1234F1Z5."
+                                                                : ""
+                                                        );
+                                                    }
+                                                }}
                                                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                                             />
+
+                                            {fieldKey === "taxId" && (
+                                                <p
+                                                    className={`mt-2 text-xs ${gstError
+                                                        ? "text-red-600"
+                                                        : "text-slate-500"
+                                                        }`}
+                                                >
+                                                    {gstError ||
+                                                        "Format example: 27ABCDE1234F1Z5"}
+                                                </p>
+                                            )}
                                         </div>
                                     );
                                 }
