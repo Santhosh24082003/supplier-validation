@@ -180,15 +180,23 @@ export default function CreateRegistration() {
     };
 
     return (
-        <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 sm:px-6 lg:px-8">
+        <main className="min-h-screen bg-[#f6f8fb] px-4 py-8 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-5xl">
+
+                <button
+                    type="button"
+                    onClick={() => router.push("/admin")}
+                    className="mb-6 text-sm font-medium text-blue-700 transition hover:text-blue-900"
+                >
+                    ← Back to Admin Dashboard
+                </button>
 
                 {/* Header */}
 
                 <div className="mb-8">
                     <div className="mb-3 flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-indigo-600"></div>
-                        <span className="text-sm font-semibold uppercase tracking-wider text-indigo-600">
+                        <div className="h-2 w-2 rounded-full bg-blue-700"></div>
+                        <span className="text-sm font-semibold uppercase tracking-wider text-blue-700">
                             Supplier Management
                         </span>
                     </div>

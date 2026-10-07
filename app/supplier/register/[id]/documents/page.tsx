@@ -263,7 +263,7 @@ export default function ValidationPage() {
 
     if (loading) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-slate-50">
+            <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb]">
                 <p className="text-slate-600">
                     Loading documents...
                 </p>
@@ -273,7 +273,7 @@ export default function ValidationPage() {
 
     if (!registration) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+            <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-6">
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
                     <h1 className="text-xl font-bold text-slate-900">
                         Registration not found
@@ -284,7 +284,7 @@ export default function ValidationPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 px-6 py-12">
+        <main className="min-h-screen bg-[#f6f8fb] px-4 py-10 sm:px-6">
             <div className="mx-auto max-w-4xl">
                 <button
                     type="button"
@@ -295,7 +295,7 @@ export default function ValidationPage() {
                 </button>
 
                 <div className="mb-8">
-                    <p className="text-sm font-semibold text-indigo-600">
+                    <p className="text-sm font-semibold text-blue-700">
                         {registration.supplierCategory} Supplier
                     </p>
 
@@ -309,12 +309,12 @@ export default function ValidationPage() {
                     </p>
                 </div>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                    <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-                        <p className="font-semibold text-indigo-950">
+                <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+                    <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                        <p className="font-semibold text-blue-950">
                             Required for {registration.supplierCategory}
                         </p>
-                        <p className="mt-1 text-sm text-indigo-800">
+                        <p className="mt-1 text-sm text-blue-800">
                             {requiredDocuments.length} documents are required for this category.
                         </p>
                     </div>

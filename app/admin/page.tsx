@@ -91,35 +91,37 @@ export default function AdminDashboard() {
     );
 
     return (
-        <main className="min-h-screen bg-[#eef3f7] text-slate-950">
+        <main className="min-h-screen bg-[#f6f8fb] text-slate-950">
             <div className="flex min-h-screen flex-col lg:flex-row">
-                <aside className="w-full border-b border-slate-200 bg-[#0b1f33] text-white lg:min-h-screen lg:w-80 lg:border-b-0 lg:border-r lg:border-slate-800">
+                <aside className="w-full border-b border-slate-800 bg-slate-800 text-white lg:sticky lg:top-0 lg:h-screen lg:min-h-screen lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r lg:border-slate-900">
                     <div className="flex h-full flex-col p-5 sm:p-7">
-                        <div className="flex items-center gap-3 border-b border-white/10 pb-7">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400 text-lg font-black text-[#0b1f33] shadow-lg shadow-cyan-950/30">
+                        <div className="flex items-center gap-3 border-b border-white/10 pb-6">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-base font-black text-blue-800 shadow-sm">
                                 SV
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-100">
                                     Supplier Validation
                                 </p>
 
-                                <h1 className="mt-1 text-xl font-semibold tracking-tight">
+                                <h1 className="mt-1 text-lg font-semibold tracking-tight">
                                     Admin Console
                                 </h1>
                             </div>
                         </div>
 
                         <nav className="mt-8 grid gap-2 sm:grid-cols-3 lg:block">
-                            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                            <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-200/70">
                                 Navigation
                             </p>
 
                             <button
                                 type="button"
-                                className="flex w-full items-center gap-3 rounded-xl bg-cyan-400 px-4 py-3 text-left text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/20"
+                                aria-current="page"
+                                className="flex w-full items-center gap-3 rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-left text-sm font-semibold text-white shadow-none"
                             >
+                                <span aria-hidden="true" className="text-base text-blue-200">▦</span>
                                 Dashboard
                             </button>
 
@@ -132,7 +134,7 @@ export default function AdminDashboard() {
                                             behavior: "smooth",
                                         })
                                 }
-                                className="mt-1 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                                className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-slate-200 transition hover:bg-white/10 hover:text-white"
                             >
                                 <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/15 text-xs text-slate-400">
                                     02
@@ -147,8 +149,9 @@ export default function AdminDashboard() {
                                         "/admin/registrations/new"
                                     )
                                 }
-                                className="mt-1 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+                                className="mt-1 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-blue-100 transition hover:bg-white/10 hover:text-white"
                             >
+                                <span aria-hidden="true" className="text-lg leading-none text-blue-200">+</span>
                                 Create Registration
                             </button>
                         </nav>
@@ -164,29 +167,24 @@ export default function AdminDashboard() {
                     </div>
                 </aside>
 
-                <section className="flex-1 px-5 py-6 sm:px-8 lg:px-12 lg:py-8">
+                <section className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:px-10 lg:py-8">
                     <div className="mx-auto max-w-7xl">
-                        <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:flex lg:items-end lg:justify-between">
+                        <header className="flex flex-col gap-5 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">
-                                    Admin workspace / Overview
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+                                    Admin Workspace
                                 </p>
 
-                                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                                    Good morning, Admin
+                                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                                    Overview
                                 </h2>
 
+                                <p className="mt-2 text-sm text-slate-500">
+                                    Overview and supplier registration activity
+                                </p>
                             </div>
 
-                            <div className="mt-6 flex gap-3 lg:mt-0">
-                                {/* <button
-                                    type="button"
-                                    onClick={loadDashboard}
-                                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-                                >
-                                    Refresh
-                                </button> */}
-
+                            <div className="flex flex-wrap gap-3">
                                 <button
                                     type="button"
                                     onClick={() =>
@@ -194,55 +192,86 @@ export default function AdminDashboard() {
                                             "/admin/registrations/new"
                                         )
                                     }
-                                    className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
                                 >
-                                    New Registration
+                                    <span aria-hidden="true" className="text-lg leading-none">+</span>
+                                    Create Registration
                                 </button>
                             </div>
                         </header>
 
-                        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                            <div className="rounded-2xl border border-slate-200 border-t-4 border-t-slate-950 bg-white p-5 shadow-sm">
-                                <p className="text-sm font-medium text-slate-500">
-                                    Total registrations
-                                </p>
-                                <p className="mt-3 text-3xl font-semibold text-slate-950">
-                                    {summaries.length}
-                                </p>
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-500">
+                                            Total registrations
+                                        </p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                                            {summaries.length}
+                                        </p>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            All registrations
+                                        </p>
+                                    </div>
+                                    <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-lg text-blue-700">
+                                        ▦
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="rounded-2xl border border-emerald-200 border-t-4 border-t-emerald-500 bg-emerald-50 p-5 shadow-sm">
-                                <p className="text-sm font-medium text-emerald-800">
-                                    Active now
-                                </p>
-                                <p className="mt-3 text-3xl font-semibold text-emerald-950">
-                                    {activeCount}
-                                </p>
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-500">
+                                            Active now
+                                        </p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                                            {activeCount}
+                                        </p>
+                                        <p className="mt-1 text-xs text-emerald-700">
+                                            Currently accepting suppliers
+                                        </p>
+                                    </div>
+                                    <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-lg text-emerald-700">
+                                        ✓
+                                    </span>
+                                </div>
                             </div>
 
-                            <div className="rounded-2xl border border-cyan-200 border-t-4 border-t-cyan-500 bg-cyan-50 p-5 shadow-sm">
-                                <p className="text-sm font-medium text-cyan-800">
-                                    Pending approvals
-                                </p>
-                                <p className="mt-3 text-3xl font-semibold text-cyan-950">
-                                    {pendingRequestCount}
-                                </p>
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-500">
+                                            Pending approvals
+                                        </p>
+                                        <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                                            {pendingRequestCount}
+                                        </p>
+                                        <p className="mt-1 text-xs text-amber-700">
+                                            Requires your attention
+                                        </p>
+                                    </div>
+                                    <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-lg text-amber-700">
+                                        !
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <section id="registrations" className="mt-8">
-                            <div className="mb-5 flex items-end justify-between gap-4">
+                        <section id="registrations" className="mt-9">
+                            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                                 <div>
-                                    <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-                                        Registration pipeline
+                                    <h3 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+                                        Registration Pipelines
                                     </h3>
 
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Choose a workflow to continue managing suppliers.
+                                        Manage and monitor supplier onboarding workflows.
                                     </p>
                                 </div>
 
-                                <span className="text-sm font-medium text-slate-500">
+                                <span className="text-sm text-slate-500">
                                     {summaries.length} total
                                 </span>
                             </div>
@@ -270,7 +299,7 @@ export default function AdminDashboard() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid gap-5 xl:grid-cols-2">
+                                <div className="grid gap-4 xl:grid-cols-2">
                                     {summaries.map(
                                         ({
                                             registration,
@@ -284,17 +313,17 @@ export default function AdminDashboard() {
                                             return (
                                                 <article
                                                     key={registration.id}
-                                                    className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                                                    className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                                                 >
-                                                    <div className="border-b border-slate-100 p-6">
+                                                    <div className="border-b border-slate-100 p-5 sm:p-6">
                                                         <div className="flex items-start justify-between gap-4">
-                                                            <div>
+                                                            <div className="min-w-0">
                                                                 <div className="flex flex-wrap items-center gap-2">
-                                                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+                                                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold capitalize text-slate-700">
                                                                         {registration.registrationType}
                                                                     </span>
                                                                     <span
-                                                                        className={`rounded-full px-3 py-1 text-xs font-semibold ${state === "Active"
+                                                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${state === "Active"
                                                                             ? "bg-emerald-100 text-emerald-800"
                                                                             : state === "Upcoming"
                                                                                 ? "bg-cyan-100 text-cyan-800"
@@ -304,7 +333,7 @@ export default function AdminDashboard() {
                                                                         {state}
                                                                     </span>
                                                                     <span
-                                                                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getApprovalStatus(registration) === "approved"
+                                                                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${getApprovalStatus(registration) === "approved"
                                                                             ? "bg-emerald-100 text-emerald-800"
                                                                             : getApprovalStatus(registration) === "rejected"
                                                                                 ? "bg-red-100 text-red-800"
@@ -315,12 +344,12 @@ export default function AdminDashboard() {
                                                                     </span>
                                                                 </div>
 
-                                                                <h4 className="mt-4 text-xl font-semibold text-slate-950">
+                                                                <h4 className="mt-4 truncate text-lg font-semibold text-slate-950 sm:text-xl">
                                                                     {registration.name}
                                                                 </h4>
 
                                                                 <p className="mt-1 text-sm text-slate-500">
-                                                                    {registration.supplierCategory} · {registration.startDate} to {registration.endDate}
+                                                                    {registration.supplierCategory} <span aria-hidden="true">·</span> {registration.startDate} – {registration.endDate}
                                                                 </p>
                                                             </div>
 
@@ -331,8 +360,10 @@ export default function AdminDashboard() {
                                                                         registration
                                                                     )
                                                                 }
-                                                                className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-500 hover:bg-slate-50"
+                                                                aria-label={`Copy link for ${registration.name}`}
+                                                                className="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
                                                             >
+                                                                <span aria-hidden="true" className="mr-1">⧉</span>
                                                                 {copiedId ===
                                                                     registration.id
                                                                     ? "Copied"
@@ -341,10 +372,10 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/70">
+                                                    <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/60">
                                                         <div className="p-4">
                                                             <p className="text-xs font-medium text-slate-500">
-                                                                Basic fields
+                                                                Configured fields
                                                             </p>
                                                             <p className="mt-1 text-lg font-semibold text-slate-950">
                                                                 {registration.requiredFields.length}
@@ -361,7 +392,7 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex flex-wrap gap-3 p-5">
+                                                    <div className="flex flex-wrap items-center gap-2.5 p-4 sm:p-5">
                                                         <button
                                                             type="button"
                                                             onClick={() =>
@@ -395,7 +426,7 @@ export default function AdminDashboard() {
                                                                             `/admin/registrations/${registration.id}/invitations`
                                                                         )
                                                                     }
-                                                                    className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+                                                                    className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900 transition hover:bg-amber-100"
                                                                 >
                                                                     Manage invitations
                                                                 </button>
@@ -410,7 +441,7 @@ export default function AdminDashboard() {
                                                                             `/admin/registrations/${registration.id}/requests`
                                                                         )
                                                                     }
-                                                                    className="rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-900 transition hover:bg-cyan-100"
+                                                                    className="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2.5 text-sm font-medium text-cyan-900 transition hover:bg-cyan-100"
                                                                 >
                                                                     Review requests
                                                                 </button>

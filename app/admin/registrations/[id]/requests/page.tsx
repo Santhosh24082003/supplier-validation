@@ -62,7 +62,7 @@ export default function RequestsPage() {
     }
 
     return (
-        <main className="min-h-screen bg-slate-50 px-6 py-8">
+        <main className="min-h-screen bg-[#f6f8fb] px-4 py-8 sm:px-6">
             <div className="mx-auto max-w-6xl">
 
                 <button
@@ -71,13 +71,13 @@ export default function RequestsPage() {
                             "/admin"
                         )
                     }
-                    className="mb-6 text-sm text-slate-500 hover:text-slate-900"
+                    className="mb-6 text-sm font-medium text-blue-700 hover:text-blue-900"
                 >
                     ← Back to Admin Dashboard
                 </button>
 
                 <div className="mb-8">
-                    <p className="text-sm font-semibold text-indigo-600">
+                    <p className="text-sm font-semibold text-blue-700">
                         Hybrid Registration
                     </p>
 
@@ -91,13 +91,13 @@ export default function RequestsPage() {
                     </p>
                 </div>
 
-                <section className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
-                    <h2 className="font-semibold text-indigo-950">
+                <section className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-6">
+                    <h2 className="font-semibold text-blue-950">
                         Share Public Registration Link
                     </h2>
 
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                        <div className="flex-1 rounded-xl border border-indigo-200 bg-white px-4 py-3 text-sm text-slate-700 break-all">
+                        <div className="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-3 text-sm text-slate-700 break-all">
                             {typeof window !== "undefined"
                                 ? `${window.location.origin}/supplier/register/${id}`
                                 : `/supplier/register/${id}`}

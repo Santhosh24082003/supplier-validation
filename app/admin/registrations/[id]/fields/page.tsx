@@ -344,7 +344,7 @@ export default function DynamicFieldsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-[#f6f8fb] flex items-center justify-center">
                 <p className="text-slate-600">
                     Loading registration...
                 </p>
@@ -354,7 +354,7 @@ export default function DynamicFieldsPage() {
 
     if (!registration) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-[#f6f8fb] flex items-center justify-center">
                 <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
                     <h1 className="text-xl font-semibold text-slate-900">
                         Registration not found
@@ -366,7 +366,7 @@ export default function DynamicFieldsPage() {
                                 "/admin"
                             )
                         }
-                        className="mt-5 px-5 py-2.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                        className="mt-5 rounded-lg bg-blue-700 px-5 py-2.5 text-white hover:bg-blue-800"
                     >
                         Back to Admin Dashboard
                     </button>
@@ -381,7 +381,7 @@ export default function DynamicFieldsPage() {
             : registration.registrationLink;
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-[#f6f8fb]">
             <div className="max-w-6xl mx-auto px-6 py-8">
 
                 {/* Header */}
@@ -399,7 +399,7 @@ export default function DynamicFieldsPage() {
 
                     <div className="flex items-start justify-between gap-6">
                         <div>
-                            <p className="text-sm font-medium text-indigo-600 mb-2">
+                            <p className="mb-2 text-sm font-medium text-blue-700">
                                 Configure Registration
                             </p>
 
@@ -413,7 +413,7 @@ export default function DynamicFieldsPage() {
                             </p>
                         </div>
 
-                        <div className="bg-white border border-slate-200 rounded-xl px-5 py-4 text-right">
+                        <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-right shadow-sm">
                             <p className="text-xs uppercase tracking-wide text-slate-400">
                                 Registration Type
                             </p>
@@ -706,7 +706,7 @@ export default function DynamicFieldsPage() {
                                                 !field.required
                                             )
                                         }
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${field.required
+                                        className={`relative inline-flex min-h-0 h-6 w-11 items-center rounded-full transition ${field.required
                                             ? "bg-indigo-600"
                                             : "bg-slate-300"
                                             }`}

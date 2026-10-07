@@ -412,7 +412,7 @@ export default function SupplierRegistrationPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <main className="min-h-screen bg-[#f6f8fb] flex items-center justify-center">
                 <p className="text-slate-600">
                     Loading registration...
                 </p>
@@ -422,7 +422,7 @@ export default function SupplierRegistrationPage() {
 
     if (!registration) {
         return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <main className="min-h-screen bg-[#f6f8fb] flex items-center justify-center">
                 <div className="rounded-2xl bg-white p-8 shadow-sm">
                     <h1 className="text-xl font-bold">
                         Registration not found
@@ -442,12 +442,12 @@ export default function SupplierRegistrationPage() {
         !accessGranted
     ) {
         return (
-            <main className="min-h-screen bg-slate-50 px-6 py-12">
+            <main className="min-h-screen bg-[#f6f8fb] px-4 py-10 sm:px-6">
                 <div className="mx-auto max-w-lg">
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
 
-                        <p className="text-sm font-semibold text-indigo-600">
+                        <p className="text-sm font-semibold text-blue-700">
                             Closed Registration
                         </p>
 

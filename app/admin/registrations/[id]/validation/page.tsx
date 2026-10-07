@@ -261,7 +261,7 @@ export default function ValidationPage() {
 
     if (loading) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-slate-50">
+            <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb]">
                 <p className="text-slate-600">
                     Loading validation result...
                 </p>
@@ -271,7 +271,7 @@ export default function ValidationPage() {
 
     if (!registration) {
         return (
-            <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
+            <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] px-6">
                 <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
                     <h1 className="text-xl font-bold text-slate-900">
                         Registration not found

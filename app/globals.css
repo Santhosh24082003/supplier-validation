@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f9fd;
+  --foreground: #172b4d;
+  --blue: #1d4ed8;
+  --blue-dark: #1e3a8a;
+  --blue-soft: #eaf2ff;
+  --red: #c62828;
+  --red-soft: #fff0f0;
+  --line: #d8e2ee;
 }
 
 @theme inline {
@@ -12,21 +18,145 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  line-height: 1.5;
 }
 
 input,
 textarea,
 select {
-  color: #000000 !important;
+  color: var(--foreground) !important;
+  border-color: var(--line);
+  background: #ffffff;
+  border-radius: 0.625rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12) !important;
+  outline: none;
+}
+
+button {
+  font-family: inherit;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, 0.25);
+  outline-offset: 2px;
+}
+
+/* Keep actions visually consistent across the existing screens. */
+button.bg-slate-950,
+button.bg-slate-800,
+button.bg-cyan-400,
+button.bg-cyan-600,
+button.bg-cyan-700,
+button.bg-indigo-600,
+button.bg-indigo-700,
+button.bg-emerald-600,
+button.bg-emerald-700 {
+  background-color: var(--blue) !important;
+}
+
+button.bg-slate-950:hover,
+button.bg-slate-800:hover,
+button.bg-cyan-400:hover,
+button.bg-cyan-600:hover,
+button.bg-cyan-700:hover,
+button.bg-indigo-600:hover,
+button.bg-indigo-700:hover,
+button.bg-emerald-600:hover,
+button.bg-emerald-700:hover {
+  background-color: var(--blue-dark) !important;
+}
+
+button.bg-red-600,
+button.bg-red-700 {
+  background-color: var(--red) !important;
+}
+
+button.bg-red-600:hover,
+button.bg-red-700:hover {
+  background-color: #991b1b !important;
+}
+
+button[class*="border-indigo-"],
+button[class*="border-cyan-"],
+button[class*="border-amber-"] {
+  border-color: #93b4e8 !important;
+  background-color: var(--blue-soft) !important;
+  color: var(--blue-dark) !important;
+}
+
+button[class*="border-indigo-"]:hover,
+button[class*="border-cyan-"]:hover,
+button[class*="border-amber-"]:hover {
+  border-color: var(--blue) !important;
+  background-color: #dbeafe !important;
+}
+
+main[class*="min-h-screen"] {
+  background-color: transparent !important;
+}
+
+[class*="rounded-3xl"],
+[class*="rounded-2xl"] {
+  border-radius: 0.75rem;
+}
+
+[class*="shadow-2xl"],
+[class*="shadow-xl"],
+[class*="shadow-lg"],
+[class*="shadow-sm"] {
+  box-shadow: 0 2px 8px rgba(23, 43, 77, 0.07);
+}
+
+[class*="rounded-2xl"][class*="bg-white"],
+[class*="rounded-3xl"][class*="bg-white"] {
+  border-color: #d8e2ee;
+  box-shadow: 0 2px 8px rgba(23, 43, 77, 0.06);
+}
+
+article[class*="rounded-2xl"] {
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+article[class*="rounded-2xl"]:hover {
+  border-color: #b8c9dc;
+  box-shadow: 0 5px 14px rgba(23, 43, 77, 0.09);
+}
+
+label {
+  color: #334155;
+}
+
+::selection {
+  background: #bfdbfe;
+  color: #172b4d;
 }
