@@ -185,13 +185,13 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="mt-6 flex gap-3 lg:mt-0">
-                                <button
+                                {/* <button
                                     type="button"
                                     onClick={loadDashboard}
                                     className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
                                 >
                                     Refresh
-                                </button>
+                                </button> */}
 
                                 <button
                                     type="button"
