@@ -113,7 +113,7 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
-                        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+                        {/* <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
                             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                                 Workspace
                             </p>
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
                             <p className="mt-2 text-sm leading-6 text-slate-200">
                                 A single place to manage supplier onboarding and approvals.
                             </p>
-                        </div>
+                        </div> */}
 
                         <nav className="mt-8 grid gap-2 sm:grid-cols-3 lg:block">
                             <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
