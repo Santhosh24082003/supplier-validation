@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
     createSupplierAccessCode,
     ensureSupplierInvitationCodes,
+    getRegistrations,
     saveSupplierInvitation,
 } from "@/lib/storage";
 
@@ -22,6 +23,9 @@ export default function InvitationsPage() {
     const [invitations, setInvitations] =
         useState<SupplierInvitation[]>([]);
 
+    const [isClosedRegistration, setIsClosedRegistration] =
+        useState(false);
+
     const [error, setError] = useState("");
 
     const [copied, setCopied] = useState(false);
@@ -30,6 +34,13 @@ export default function InvitationsPage() {
         useState("");
 
     useEffect(() => {
+        const registration = getRegistrations().find(
+            (item) => item.id === id
+        );
+
+        setIsClosedRegistration(
+            registration?.registrationType === "closed"
+        );
         setInvitations(
             ensureSupplierInvitationCodes(id)
         );
@@ -68,6 +79,17 @@ export default function InvitationsPage() {
         event.preventDefault();
 
         setError("");
+
+        if (
+            isClosedRegistration &&
+            invitations.length >= 1
+        ) {
+            setError(
+                "Only one supplier can be invited to a closed registration."
+            );
+
+            return;
+        }
 
         const cleanEmail =
             email.trim().toLowerCase();
@@ -207,12 +229,24 @@ export default function InvitationsPage() {
                         />
 
                         <button
+                            disabled={
+                                isClosedRegistration &&
+                                invitations.length >= 1
+                            }
                             type="submit"
-                            className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700"
+                            className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
-                            Add Supplier
+                            {isClosedRegistration && invitations.length >= 1
+                                ? "Invitation Created"
+                                : "Add Supplier"}
                         </button>
                     </form>
+
+                    {isClosedRegistration && invitations.length >= 1 && (
+                        <p className="mt-3 text-sm text-slate-500">
+                            Closed registrations allow only one supplier invitation.
+                        </p>
+                    )}
 
                     {error && (
                         <p className="mt-3 text-sm text-red-600">
