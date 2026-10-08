@@ -74,7 +74,22 @@ const basicFieldOptions = [
         key: "expectedPurchaseValue",
         label: "Expected Purchase Value (INR)",
     },
+    { key: "productName", label: "Product Name", mandatory: true },
+    {
+        key: "productDescription",
+        label: "Product Description",
+        mandatory: true,
+    },
+    {
+        key: "unitOfMeasurement",
+        label: "Unit of Measurement",
+        mandatory: true,
+    },
 ];
+
+const mandatoryBasicFieldKeys = basicFieldOptions
+    .filter((field) => field.mandatory)
+    .map((field) => field.key);
 
 export default function DynamicFieldsPage() {
     const params = useParams();
@@ -107,7 +122,15 @@ export default function DynamicFieldsPage() {
             return;
         }
 
-        setRegistration(currentRegistration);
+        setRegistration({
+            ...currentRegistration,
+            requiredFields: Array.from(
+                new Set([
+                    ...currentRegistration.requiredFields,
+                    ...mandatoryBasicFieldKeys,
+                ])
+            ),
+        });
 
         const savedFields = localStorage.getItem(
             `registration-fields-${id}`
@@ -121,6 +144,10 @@ export default function DynamicFieldsPage() {
     }, [id]);
 
     function handleBasicFieldChange(fieldKey: string) {
+        if (mandatoryBasicFieldKeys.includes(fieldKey)) {
+            return;
+        }
+
         setRegistration((currentRegistration) => {
             if (!currentRegistration) {
                 return currentRegistration;
@@ -599,6 +626,8 @@ export default function DynamicFieldsPage() {
                                     checked={registration.requiredFields.includes(
                                         field.key
                                     )}
+                                    aria-disabled={field.mandatory}
+                                    disabled={field.mandatory}
                                     onChange={() =>
                                         handleBasicFieldChange(field.key)
                                     }

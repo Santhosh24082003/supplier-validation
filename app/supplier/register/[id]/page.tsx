@@ -79,6 +79,18 @@ const basicCompanyInformation: Record<
         label: "Expected Purchase Value (INR)",
         type: "number",
     },
+    productName: {
+        label: "Product Name",
+        type: "text",
+    },
+    productDescription: {
+        label: "Product Description",
+        type: "text",
+    },
+    unitOfMeasurement: {
+        label: "Unit of Measurement",
+        type: "text",
+    },
 };
 
 function isValidGstNumber(value: string) {
