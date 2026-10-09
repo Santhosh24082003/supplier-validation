@@ -74,17 +74,6 @@ const basicFieldOptions = [
         key: "expectedPurchaseValue",
         label: "Expected Purchase Value (INR)",
     },
-    { key: "productName", label: "Product Name", mandatory: true },
-    {
-        key: "productDescription",
-        label: "Product Description",
-        mandatory: true,
-    },
-    {
-        key: "unitOfMeasurement",
-        label: "Unit of Measurement",
-        mandatory: true,
-    },
 ];
 
 const mandatoryBasicFieldKeys = basicFieldOptions
