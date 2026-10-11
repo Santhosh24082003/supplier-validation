@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveRegistration } from "@/lib/storage";
 import {
     defaultRegistrationRules,
+    getGlobalRules,
     saveRegistrationRules,
 } from "@/lib/rules";
 import type { RegistrationRule } from "@/lib/rules";
@@ -58,9 +59,16 @@ export default function CreateRegistration() {
         "expectedPurchaseValue",
     ]);
 
-    const [rules, setRules] = useState<RegistrationRule[]>(
-        defaultRegistrationRules
-    );
+    const [rules, setRules] = useState<RegistrationRule[]>(() => {
+        if (typeof window !== "undefined") {
+            return getGlobalRules();
+        }
+        return defaultRegistrationRules;
+    });
+
+    useEffect(() => {
+        setRules(getGlobalRules());
+    }, []);
 
     const [error, setError] = useState("");
 
@@ -487,63 +495,100 @@ export default function CreateRegistration() {
                                         rule.id ===
                                         "high-purchase-financial-documents"
                                 )
-                                .map((rule) => (
-                                    <div
-                                        key={rule.id}
-                                        className={`rounded-xl border p-4 transition ${rule.enabled
-                                            ? "border-indigo-500 bg-indigo-50/50"
-                                            : "border-gray-200 bg-white"
-                                            }`}
-                                    >
-                                        <label className="flex cursor-pointer items-start gap-4">
-                                            <input
-                                                type="checkbox"
-                                                checked={rule.enabled}
-                                                onChange={() =>
-                                                    handleRuleChange(rule.id)
-                                                }
-                                                className="mt-1 h-4 w-4 rounded accent-indigo-600"
-                                            />
-
-                                            <span>
-                                                <span className="block text-sm font-semibold text-gray-900">
-                                                    {rule.label}
-                                                </span>
-                                                <span className="mt-1 block text-sm leading-6 text-gray-500">
-                                                    {rule.description}
-                                                </span>
-                                            </span>
-                                        </label>
-
-                                        {rule.id ===
-                                            "high-purchase-financial-documents" && (
-                                                <div className="mt-4 ml-8 max-w-sm">
-                                                    <label
-                                                        htmlFor="purchaseThreshold"
-                                                        className="mb-2 block text-sm font-semibold text-gray-700"
-                                                    >
-                                                        Purchase value threshold (INR)
-                                                    </label>
-
-                                                    <input
-                                                        id="purchaseThreshold"
-                                                        type="number"
-                                                        min="0"
-                                                        value={rule.threshold || 0}
-                                                        onChange={(event) =>
-                                                            handleRuleThresholdChange(
-                                                                rule.id,
-                                                                Number(
-                                                                    event.target.value
-                                                                )
-                                                            )
-                                                        }
-                                                        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                                                    />
-                                                </div>
-                                            )}
+                                .filter((rule) => {
+                                    const globalRule = getGlobalRules().find(
+                                        (g) => g.id === rule.id
+                                    );
+                                    return globalRule ? globalRule.enabled : true;
+                                })
+                                .length === 0 ? (
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center">
+                                        <p className="text-sm font-medium text-slate-700">
+                                            No optional business rules are currently enabled in Global Rules.
+                                        </p>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            Configure active rules in Admin Dashboard &gt; Rules to make them applicable here.
+                                        </p>
                                     </div>
-                                ))}
+                                ) : (
+                                    rules
+                                        .filter(
+                                            (rule) =>
+                                                rule.id ===
+                                                "company-name-match" ||
+                                                rule.id ===
+                                                "it-iso-certificate" ||
+                                                rule.id ===
+                                                "construction-safety-certificate" ||
+                                                rule.id ===
+                                                "supplier-insurance" ||
+                                                rule.id ===
+                                                "high-purchase-financial-documents"
+                                        )
+                                        .filter((rule) => {
+                                            const globalRule = getGlobalRules().find(
+                                                (g) => g.id === rule.id
+                                            );
+                                            return globalRule ? globalRule.enabled : true;
+                                        })
+                                        .map((rule) => (
+                                            <div
+                                                key={rule.id}
+                                                className={`rounded-xl border p-4 transition ${rule.enabled
+                                                    ? "border-indigo-500 bg-indigo-50/50"
+                                                    : "border-gray-200 bg-white"
+                                                    }`}
+                                            >
+                                                <label className="flex cursor-pointer items-start gap-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={rule.enabled}
+                                                        onChange={() =>
+                                                            handleRuleChange(rule.id)
+                                                        }
+                                                        className="mt-1 h-4 w-4 rounded accent-indigo-600"
+                                                    />
+
+                                                    <span>
+                                                        <span className="block text-sm font-semibold text-gray-900">
+                                                            {rule.label}
+                                                        </span>
+                                                        <span className="mt-1 block text-sm leading-6 text-gray-500">
+                                                            {rule.description}
+                                                        </span>
+                                                    </span>
+                                                </label>
+
+                                                {rule.id ===
+                                                    "high-purchase-financial-documents" && (
+                                                        <div className="mt-4 ml-8 max-w-sm">
+                                                            <label
+                                                                htmlFor="purchaseThreshold"
+                                                                className="mb-2 block text-sm font-semibold text-gray-700"
+                                                            >
+                                                                Purchase value threshold (INR)
+                                                            </label>
+
+                                                            <input
+                                                                id="purchaseThreshold"
+                                                                type="number"
+                                                                min="0"
+                                                                value={rule.threshold || 0}
+                                                                onChange={(event) =>
+                                                                    handleRuleThresholdChange(
+                                                                        rule.id,
+                                                                        Number(
+                                                                            event.target.value
+                                                                        )
+                                                                    )
+                                                                }
+                                                                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                                            />
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        ))
+                                )}
                         </div>
                     </section>
 

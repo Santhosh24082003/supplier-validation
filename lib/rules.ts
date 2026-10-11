@@ -77,11 +77,45 @@ export const defaultRegistrationRules: RegistrationRule[] = [
     },
 ];
 
+export const GLOBAL_RULES_KEY = "global-registration-rules";
+
+export function getGlobalRules(): RegistrationRule[] {
+    if (typeof window === "undefined") {
+        return defaultRegistrationRules;
+    }
+
+    const data = localStorage.getItem(GLOBAL_RULES_KEY);
+
+    if (!data) {
+        return defaultRegistrationRules;
+    }
+
+    try {
+        const savedRules = JSON.parse(data) as RegistrationRule[];
+        return defaultRegistrationRules.map((defaultRule) => {
+            const found = savedRules.find(
+                (savedRule) => savedRule.id === defaultRule.id
+            );
+            return found ? { ...defaultRule, ...found } : defaultRule;
+        });
+    } catch {
+        return defaultRegistrationRules;
+    }
+}
+
+export function saveGlobalRules(rules: RegistrationRule[]) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    localStorage.setItem(GLOBAL_RULES_KEY, JSON.stringify(rules));
+}
+
 export function getRegistrationRules(
     registrationId: string
 ): RegistrationRule[] {
     if (typeof window === "undefined") {
-        return defaultRegistrationRules;
+        return getGlobalRules();
     }
 
     const data = localStorage.getItem(
@@ -89,12 +123,12 @@ export function getRegistrationRules(
     );
 
     if (!data) {
-        return defaultRegistrationRules;
+        return getGlobalRules();
     }
 
     const savedRules = JSON.parse(data) as RegistrationRule[];
 
-    return defaultRegistrationRules.map((defaultRule) =>
+    return getGlobalRules().map((defaultRule) =>
         savedRules.find(
             (savedRule) => savedRule.id === defaultRule.id
         ) || defaultRule
