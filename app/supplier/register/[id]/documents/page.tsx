@@ -10,15 +10,18 @@ import { useParams, useRouter } from "next/navigation";
 import {
     getRegistrations,
     getRegistrationDynamicFiles,
+    getSupplierItems,
+    saveSupplierItems,
 } from "@/lib/storage";
 import {
     getRequiredDocuments,
     dynamicFileToRequiredDocument,
     RequiredDocument,
+    getUnitsOfMeasurement,
 } from "@/lib/document-requirements";
 import { getRegistrationRules } from "@/lib/rules";
 import type { RegistrationRule } from "@/lib/rules";
-import type { DynamicFileRequirement } from "@/types/registration";
+import type { DynamicFileRequirement, SupplyingItem } from "@/types/registration";
 
 interface Registration {
     id: string;
@@ -66,6 +69,8 @@ export default function SupplierDocumentsPage() {
         useState<RegistrationRule[]>([]);
     const [purchaseValue, setPurchaseValue] =
         useState(0);
+    const [items, setItems] =
+        useState<SupplyingItem[]>([]);
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -110,6 +115,23 @@ export default function SupplierDocumentsPage() {
         const dynamicFiles = getRegistrationDynamicFiles(id);
         if (dynamicFiles && dynamicFiles.length > 0) {
             setDynamicFileRequirements(dynamicFiles);
+        }
+
+        const savedItems = getSupplierItems(id);
+        if (savedItems && savedItems.length > 0) {
+            setItems(savedItems);
+        } else {
+            const initialUom =
+                getUnitsOfMeasurement(currentRegistration.supplierCategory)[0] ||
+                "Pieces (Pcs)";
+            setItems([
+                {
+                    id: crypto.randomUUID(),
+                    name: "",
+                    uom: initialUom,
+                    price: "",
+                },
+            ]);
         }
 
         setLoading(false);
@@ -241,6 +263,46 @@ export default function SupplierDocumentsPage() {
         );
     }
 
+    function handleAddItem() {
+        const defaultUom = registration
+            ? getUnitsOfMeasurement(registration.supplierCategory)[0] || "Pieces (Pcs)"
+            : "Pieces (Pcs)";
+
+        const updated = [
+            ...items,
+            {
+                id: crypto.randomUUID(),
+                name: "",
+                uom: defaultUom,
+                price: "",
+            },
+        ];
+        setItems(updated);
+        saveSupplierItems(id, updated);
+        setSaved(false);
+    }
+
+    function handleItemChange(
+        index: number,
+        field: keyof SupplyingItem,
+        value: string
+    ) {
+        const updated = items.map((item, i) =>
+            i === index ? { ...item, [field]: value } : item
+        );
+        setItems(updated);
+        saveSupplierItems(id, updated);
+        setSaved(false);
+    }
+
+    function handleRemoveItem(index: number) {
+        if (items.length <= 1) return;
+        const updated = items.filter((_, i) => i !== index);
+        setItems(updated);
+        saveSupplierItems(id, updated);
+        setSaved(false);
+    }
+
     function handleSubmit() {
         const missingDocuments = allDocuments.filter(
             (requiredDocument) =>
@@ -284,6 +346,24 @@ export default function SupplierDocumentsPage() {
             );
             return;
         }
+
+        const invalidItems = items.filter(
+            (item) => !item.name.trim() || item.price === "" || Number(item.price) < 0
+        );
+
+        if (items.length === 0) {
+            setError("Please add at least one item or service details.");
+            return;
+        }
+
+        if (invalidItems.length > 0) {
+            setError(
+                "Please fill in Item / Service Name and a valid Unit Price (₹) for all items."
+            );
+            return;
+        }
+
+        saveSupplierItems(id, items);
 
         setError("");
         setSaved(true);
@@ -370,6 +450,113 @@ export default function SupplierDocumentsPage() {
                 </div>
 
                 <div className="space-y-6">
+
+                    {/* SECTION: SUPPLYING ITEM & PRICING DETAILS */}
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between border-b border-slate-100 pb-4 mb-5 gap-1">
+                            <h2 className="text-xl font-bold text-slate-900">
+                                Supplying Item &amp; Pricing Details
+                            </h2>
+                            <span className="text-xs text-slate-500">
+                                Item baseline for purchase requisition &amp; quote evaluation
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            {items.map((item, index) => (
+                                <div
+                                    key={item.id || index}
+                                    className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-slate-700">
+                                            Item {index + 1}
+                                        </span>
+                                        {items.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveItem(index)}
+                                                className="text-xs font-semibold text-red-600 hover:text-red-700 transition"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                                Item / Service Name <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) =>
+                                                    handleItemChange(index, "name", e.target.value)
+                                                }
+                                                placeholder="Enter the product or service you will supply"
+                                                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 bg-white"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                                Unit of Measurement <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                value={item.uom}
+                                                onChange={(e) =>
+                                                    handleItemChange(index, "uom", e.target.value)
+                                                }
+                                                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-800 focus:ring-1 focus:ring-slate-800 bg-white"
+                                            >
+                                                {getUnitsOfMeasurement(
+                                                    registration?.supplierCategory
+                                                ).map((unit) => (
+                                                    <option key={unit} value={unit}>
+                                                        {unit}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                            Unit Price (₹) <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-sm font-mono text-slate-500">
+                                                ₹
+                                            </span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="any"
+                                                value={item.price}
+                                                onChange={(e) =>
+                                                    handleItemChange(index, "price", e.target.value)
+                                                }
+                                                placeholder="0.00"
+                                                className="w-full rounded-lg border border-slate-300 bg-white pl-8 pr-3.5 py-2.5 text-sm font-mono text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-800 focus:ring-1 focus:ring-slate-800"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={handleAddItem}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-2xs hover:bg-slate-50 transition"
+                                >
+                                    <span className="text-base leading-none">+</span>
+                                    <span>Add Item</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
 
                     {/* SECTION 1: DYNAMIC / CUSTOM FILES (If configured) */}
                     {dynamicDocuments.length > 0 && (

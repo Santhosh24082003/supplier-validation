@@ -7,9 +7,10 @@ import {
     getRegistrations,
     getSupplierAccessRequests,
     getRegistrationDynamicFiles,
+    getSupplierItems,
 } from "@/lib/storage";
 
-import { Registration } from "@/types/registration";
+import { Registration, SupplyingItem } from "@/types/registration";
 import {
     defaultRegistrationRules,
     getGlobalRules,
@@ -21,6 +22,7 @@ interface RegistrationSummary {
     registration: Registration;
     totalFieldCount: number;
     dynamicFileCount: number;
+    itemsCount: number;
     pendingRequestCount: number;
 }
 
@@ -38,6 +40,7 @@ interface OnboardedSupplier {
     submittedAt: string;
     documentCount: number;
     approvalSource: "registration" | "hybrid_request";
+    items?: SupplyingItem[];
 }
 
 function getRegistrationState(registration: Registration) {
@@ -94,12 +97,14 @@ export default function AdminDashboard() {
                 const dynamicFileCount = getRegistrationDynamicFiles(
                     registration.id
                 ).length;
+                const itemsCount = getSupplierItems(registration.id).length;
 
                 return {
                     registration,
                     totalFieldCount:
                         registration.requiredFields.length + dynamicFieldCount,
                     dynamicFileCount,
+                    itemsCount,
                     pendingRequestCount: getSupplierAccessRequests(
                         registration.id
                     ).filter((request) => request.status === "pending").length,
@@ -160,6 +165,7 @@ export default function AdminDashboard() {
                 const expectedPurchaseValue =
                     submission?.basicInformation?.expectedPurchaseValue || "";
                 const submittedAt = submission?.submittedAt || reg.createdAt;
+                const items = getSupplierItems(reg.id);
 
                 seenKeys.add(`${reg.id}-${companyName}`);
                 suppliers.push({
@@ -176,6 +182,7 @@ export default function AdminDashboard() {
                     submittedAt,
                     documentCount: documentsCount,
                     approvalSource: "registration",
+                    items,
                 });
             }
 
@@ -202,6 +209,7 @@ export default function AdminDashboard() {
                         submittedAt: request.createdAt,
                         documentCount: 0,
                         approvalSource: "hybrid_request",
+                        items: getSupplierItems(reg.id),
                     });
                 }
             });
@@ -602,6 +610,7 @@ export default function AdminDashboard() {
                                                     registration,
                                                     totalFieldCount,
                                                     dynamicFileCount,
+                                                    itemsCount,
                                                 }) => {
                                                     const state =
                                                         getRegistrationState(
@@ -705,7 +714,7 @@ export default function AdminDashboard() {
                                                                 </div>
                                                             </div>
 
-                                                            <div className="grid grid-cols-2 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/60">
+                                                            <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/60">
                                                                 <div className="p-4">
                                                                     <p className="text-xs font-medium text-slate-500">
                                                                         Form fields
@@ -724,6 +733,16 @@ export default function AdminDashboard() {
                                                                     <p className="mt-1 text-lg font-semibold text-indigo-700">
                                                                         {
                                                                             dynamicFileCount
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                                <div className="p-4">
+                                                                    <p className="text-xs font-medium text-slate-500">
+                                                                        Supplied items
+                                                                    </p>
+                                                                    <p className="mt-1 text-lg font-semibold text-emerald-700">
+                                                                        {
+                                                                            itemsCount
                                                                         }
                                                                     </p>
                                                                 </div>
@@ -1124,7 +1143,53 @@ export default function AdminDashboard() {
                                                                         : "N/A"}
                                                                 </p>
                                                             </div>
+
+                                                            <div>
+                                                                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                                                    Supplying Items
+                                                                </p>
+                                                                <p className="mt-1 text-xs font-semibold text-emerald-700">
+                                                                    {supplier.items && supplier.items.length > 0
+                                                                        ? `${supplier.items.length} item${supplier.items.length !== 1 ? "s" : ""}`
+                                                                        : "0 items"}
+                                                                </p>
+                                                            </div>
                                                         </div>
+
+                                                        {/* Supplying Items Preview */}
+                                                        {supplier.items && supplier.items.length > 0 && (
+                                                            <div className="border-b border-slate-100 bg-slate-50/40 px-5 py-3">
+                                                                <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-2">
+                                                                    <span className="flex items-center gap-1.5">
+                                                                        <span>📦</span>
+                                                                        <span>Supplying Items &amp; Pricing:</span>
+                                                                    </span>
+                                                                    <span className="text-slate-500 font-mono text-[11px]">
+                                                                        {supplier.items.length} {supplier.items.length === 1 ? "item" : "items"}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                                                                    {supplier.items.map((it, i) => (
+                                                                        <div
+                                                                            key={it.id || i}
+                                                                            className="flex items-center justify-between rounded-lg bg-white border border-slate-200/80 px-3 py-1.5 text-xs shadow-2xs"
+                                                                        >
+                                                                            <span className="font-semibold text-slate-900 truncate max-w-[200px]">
+                                                                                {it.name || `Item ${i + 1}`}
+                                                                            </span>
+                                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                                <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px] font-medium">
+                                                                                    {it.uom}
+                                                                                </span>
+                                                                                <span className="font-mono font-bold text-slate-900">
+                                                                                    ₹{Number(it.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
 
                                                         {/* Action Buttons */}
                                                         <div className="flex flex-wrap items-center gap-2 p-4 sm:p-5">

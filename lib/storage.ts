@@ -3,6 +3,7 @@ import {
     SupplierInvitation,
     SupplierAccessRequest,
     DynamicFileRequirement,
+    SupplyingItem,
 } from "@/types/registration";
 
 const REGISTRATIONS_KEY = "registrations";
@@ -283,4 +284,66 @@ export function saveRegistrationDynamicFiles(
         getDynamicFilesKey(registrationId),
         JSON.stringify(files)
     );
-}
+}
+
+/* ----------------------------- */
+/* SUPPLIER ITEMS & PRICING      */
+/* ----------------------------- */
+
+function getSupplierItemsKey(registrationId: string) {
+    return `supplier-items-${registrationId}`;
+}
+
+export function getSupplierItems(registrationId: string): SupplyingItem[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+
+    const data = localStorage.getItem(getSupplierItemsKey(registrationId));
+    if (data) {
+        try {
+            return JSON.parse(data);
+        } catch {
+            return [];
+        }
+    }
+
+    const regData = localStorage.getItem(`supplier-registration-${registrationId}`);
+    if (regData) {
+        try {
+            const parsed = JSON.parse(regData);
+            if (Array.isArray(parsed.items)) {
+                return parsed.items;
+            }
+        } catch {}
+    }
+
+    return [];
+}
+
+export function saveSupplierItems(
+    registrationId: string,
+    items: SupplyingItem[]
+) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    localStorage.setItem(
+        getSupplierItemsKey(registrationId),
+        JSON.stringify(items)
+    );
+
+    const regData = localStorage.getItem(`supplier-registration-${registrationId}`);
+    if (regData) {
+        try {
+            const parsed = JSON.parse(regData);
+            parsed.items = items;
+            localStorage.setItem(
+                `supplier-registration-${registrationId}`,
+                JSON.stringify(parsed)
+            );
+        } catch {}
+    }
+}
+

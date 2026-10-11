@@ -67,4 +67,12 @@ export interface DynamicFileRequirement {
     collectDocNumber?: boolean;
     collectIssueDate?: boolean;
     collectExpiryDate?: boolean;
-}
+}
+
+export interface SupplyingItem {
+    id: string;
+    name: string;
+    uom: string;
+    price: string | number;
+}
+

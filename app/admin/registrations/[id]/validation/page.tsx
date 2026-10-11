@@ -7,12 +7,13 @@ import {
     getRegistrations,
     updateRegistrationApprovalStatus,
     getRegistrationDynamicFiles,
+    getSupplierItems,
 } from "@/lib/storage";
 import {
     getRequiredDocuments,
     dynamicFileToRequiredDocument,
 } from "@/lib/document-requirements";
-import type { DynamicFileRequirement } from "@/types/registration";
+import type { DynamicFileRequirement, SupplyingItem } from "@/types/registration";
 
 import {
     getRegistrationRules,
@@ -211,6 +212,8 @@ export default function ValidationPage() {
         useState<DynamicField[]>([]);
     const [dynamicFiles, setDynamicFiles] =
         useState<DynamicFileRequirement[]>([]);
+    const [items, setItems] =
+        useState<SupplyingItem[]>([]);
     const [rules, setRules] =
         useState<RegistrationRule[]>([]);
     const [approvalStatus, setApprovalStatus] =
@@ -262,6 +265,11 @@ export default function ValidationPage() {
         const savedFiles = getRegistrationDynamicFiles(id);
         if (savedFiles && savedFiles.length > 0) {
             setDynamicFiles(savedFiles);
+        }
+
+        const savedItems = getSupplierItems(id);
+        if (savedItems && savedItems.length > 0) {
+            setItems(savedItems);
         }
 
         setLoading(false);
@@ -744,6 +752,72 @@ export default function ValidationPage() {
                                     </p>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                </section>
+
+                <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 mb-5">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">📦</span>
+                                <h2 className="text-xl font-semibold text-slate-900">
+                                    Supplying Item &amp; Pricing Details
+                                </h2>
+                                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                                    {items.length} {items.length === 1 ? "Item" : "Items"}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-500">
+                                Item baseline for purchase requisition &amp; quote evaluation provided by the supplier.
+                            </p>
+                        </div>
+                        {items.length > 0 && (
+                            <div className="text-left sm:text-right">
+                                <span className="text-xs text-slate-500 block">Baseline Total</span>
+                                <span className="text-base font-bold text-slate-900">
+                                    ₹{items.reduce((sum, item) => sum + (Number(item.price) || 0), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {items.length === 0 ? (
+                        <p className="text-sm text-slate-500">
+                            No supplying items have been submitted by the supplier yet.
+                        </p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="py-3 px-4">#</th>
+                                        <th className="py-3 px-4">Item / Service Name</th>
+                                        <th className="py-3 px-4">Unit of Measurement</th>
+                                        <th className="py-3 px-4 text-right">Unit Price (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {items.map((item, index) => (
+                                        <tr key={item.id || index} className="hover:bg-slate-50/70 transition">
+                                            <td className="py-3.5 px-4 font-medium text-slate-400">
+                                                Item {index + 1}
+                                            </td>
+                                            <td className="py-3.5 px-4 font-semibold text-slate-900">
+                                                {item.name || "Untitled Item"}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-slate-600">
+                                                <span className="inline-block rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                                    {item.uom || "Pieces (Pcs)"}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-semibold text-slate-900">
+                                                ₹{Number(item.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </section>

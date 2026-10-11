@@ -324,3 +324,85 @@ export function dynamicFileToRequiredDocument(
     };
 }
 
+export const categoryUOMMap: Record<string, string[]> = {
+    IT: [
+        "Pieces (Pcs)",
+        "Hours (Hrs)",
+        "Days (Days)",
+        "Months (Months)",
+        "Licenses (Lic)",
+        "User Seats (Seats)",
+        "Subscriptions (Subs)",
+        "Milestones (Milestone)",
+        "Units (Units)",
+    ],
+    Manufacturing: [
+        "Pieces (Pcs)",
+        "Units (Units)",
+        "Kilograms (Kg)",
+        "Grams (g)",
+        "Metric Tonnes (MT)",
+        "Liters (Ltr)",
+        "Meters (Mtr)",
+        "Boxes (Box)",
+        "Sets (Sets)",
+        "Batches (Batch)",
+    ],
+    Construction: [
+        "Pieces (Pcs)",
+        "Square Feet (Sq Ft)",
+        "Square Meters (Sq M)",
+        "Cubic Meters (Cu M)",
+        "Metric Tonnes (MT)",
+        "Kilograms (Kg)",
+        "Running Meters (Rmt)",
+        "Bags (Bags)",
+        "Hours (Hrs)",
+        "Days (Days)",
+        "Loads / Trips (Loads)",
+    ],
+    Logistics: [
+        "Pieces (Pcs)",
+        "Trips / Shipments (Trips)",
+        "Kilometers (Km)",
+        "Kilograms (Kg)",
+        "Metric Tonnes (MT)",
+        "Pallets (Pallet)",
+        "Boxes (Box)",
+        "Cubic Meters (CBM)",
+        "Containers (TEU)",
+        "Hours (Hrs)",
+    ],
+    "Professional Services": [
+        "Pieces (Pcs)",
+        "Hours (Hrs)",
+        "Days (Days)",
+        "Months (Months)",
+        "Mandays (Mandays)",
+        "Retainer (Month)",
+        "Milestones (Milestone)",
+        "Deliverables (Deliverable)",
+        "Visits (Visits)",
+        "Sessions (Sessions)",
+    ],
+};
+
+export function getUnitsOfMeasurement(supplierCategory?: string): string[] {
+    if (supplierCategory && categoryUOMMap[supplierCategory]) {
+        return categoryUOMMap[supplierCategory];
+    }
+    return [
+        "Pieces (Pcs)",
+        "Units (Units)",
+        "Hours (Hrs)",
+        "Days (Days)",
+        "Months (Months)",
+        "Kilograms (Kg)",
+        "Metric Tonnes (MT)",
+        "Liters (Ltr)",
+        "Meters (Mtr)",
+        "Boxes (Box)",
+        "Sets (Sets)",
+    ];
+}
+
