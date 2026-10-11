@@ -3,6 +3,7 @@ import {
     isRuleEnabled,
     RegistrationRule,
 } from "@/lib/rules";
+import { DynamicFileRequirement } from "@/types/registration";
 
 export interface DocumentMetadataField {
     key: string;
@@ -16,7 +17,11 @@ export interface RequiredDocument {
     label: string;
     description: string;
     metadataFields: DocumentMetadataField[];
+    isDynamic?: boolean;
+    required?: boolean;
+    allowedExtensions?: string[];
 }
+
 
 const companyNameField: DocumentMetadataField = {
     key: "companyName",
@@ -268,3 +273,54 @@ export function getRequiredDocuments(
         ? [...requiredDocuments, ...financialDocuments]
         : requiredDocuments;
 }
+
+export function dynamicFileToRequiredDocument(
+    file: DynamicFileRequirement
+): RequiredDocument {
+    const metadataFields: DocumentMetadataField[] = [];
+
+    if (file.collectCompanyName) {
+        metadataFields.push({
+            key: "companyName",
+            label: "Company Name on Document",
+            type: "text",
+            placeholder: "ABC Technologies Pvt Ltd",
+        });
+    }
+
+    if (file.collectDocNumber) {
+        metadataFields.push({
+            key: "documentNumber",
+            label: "Document / Certificate Number",
+            type: "text",
+            placeholder: "e.g. DOC-12345",
+        });
+    }
+
+    if (file.collectIssueDate) {
+        metadataFields.push({
+            key: "issueDate",
+            label: "Issue Date",
+            type: "date",
+        });
+    }
+
+    if (file.collectExpiryDate) {
+        metadataFields.push({
+            key: "expiryDate",
+            label: "Expiry Date",
+            type: "date",
+        });
+    }
+
+    return {
+        key: `dynamic-${file.id}`,
+        label: file.label,
+        description: file.description || "Upload the requested document.",
+        metadataFields,
+        isDynamic: true,
+        required: file.required !== false,
+        allowedExtensions: file.allowedExtensions,
+    };
+}
+

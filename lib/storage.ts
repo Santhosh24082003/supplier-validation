@@ -1,7 +1,8 @@
-import { Registration } from "@/types/registration";
 import {
+    Registration,
     SupplierInvitation,
     SupplierAccessRequest,
+    DynamicFileRequirement,
 } from "@/types/registration";
 
 const REGISTRATIONS_KEY = "registrations";
@@ -251,3 +252,35 @@ export function updateSupplierAccessRequest(
         JSON.stringify(updated)
     );
 }
+
+/* ----------------------------- */
+/* DYNAMIC FILE REQUIREMENTS     */
+/* ----------------------------- */
+
+function getDynamicFilesKey(registrationId: string) {
+    return `registration-files-${registrationId}`;
+}
+
+export function getRegistrationDynamicFiles(
+    registrationId: string
+): DynamicFileRequirement[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+
+    const data = localStorage.getItem(
+        getDynamicFilesKey(registrationId)
+    );
+
+    return data ? JSON.parse(data) : [];
+}
+
+export function saveRegistrationDynamicFiles(
+    registrationId: string,
+    files: DynamicFileRequirement[]
+) {
+    localStorage.setItem(
+        getDynamicFilesKey(registrationId),
+        JSON.stringify(files)
+    );
+}

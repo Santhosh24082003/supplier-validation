@@ -56,3 +56,15 @@ export interface SupplierAccessRequest {
 
     createdAt: string;
 }
+
+export interface DynamicFileRequirement {
+    id: string;
+    label: string;
+    description: string;
+    required: boolean;
+    allowedExtensions?: string[];
+    collectCompanyName?: boolean;
+    collectDocNumber?: boolean;
+    collectIssueDate?: boolean;
+    collectExpiryDate?: boolean;
+}

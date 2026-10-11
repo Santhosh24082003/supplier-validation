@@ -9,10 +9,12 @@ import {
 } from "@/lib/storage";
 
 import { Registration } from "@/types/registration";
+import { getRegistrationDynamicFiles } from "@/lib/storage";
 
 interface RegistrationSummary {
     registration: Registration;
     totalFieldCount: number;
+    dynamicFileCount: number;
     pendingRequestCount: number;
 }
 
@@ -53,12 +55,16 @@ export default function AdminDashboard() {
                 const dynamicFieldCount = savedFields
                     ? JSON.parse(savedFields).length
                     : 0;
+                const dynamicFileCount = getRegistrationDynamicFiles(
+                    registration.id
+                ).length;
 
                 return {
                     registration,
                     totalFieldCount:
                         registration.requiredFields.length +
                         dynamicFieldCount,
+                    dynamicFileCount,
                     pendingRequestCount:
                         getSupplierAccessRequests(
                             registration.id
@@ -317,6 +323,7 @@ export default function AdminDashboard() {
                                         ({
                                             registration,
                                             totalFieldCount,
+                                            dynamicFileCount,
                                         }) => {
                                             const state =
                                                 getRegistrationState(
@@ -385,13 +392,21 @@ export default function AdminDashboard() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 border-b border-slate-100 bg-slate-50/60">
+                                                    <div className="grid grid-cols-2 border-b border-slate-100 bg-slate-50/60 divide-x divide-slate-100">
                                                         <div className="p-4">
                                                             <p className="text-xs font-medium text-slate-500">
-                                                                Total fields
+                                                                Form fields
                                                             </p>
                                                             <p className="mt-1 text-lg font-semibold text-slate-950">
                                                                 {totalFieldCount}
+                                                            </p>
+                                                        </div>
+                                                        <div className="p-4">
+                                                            <p className="text-xs font-medium text-slate-500">
+                                                                Dynamic files
+                                                            </p>
+                                                            <p className="mt-1 text-lg font-semibold text-indigo-700">
+                                                                {dynamicFileCount}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -406,7 +421,7 @@ export default function AdminDashboard() {
                                                             }
                                                             className="rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                                         >
-                                                            Configure fields
+                                                            Configure fields &amp; files
                                                         </button>
 
                                                         <button

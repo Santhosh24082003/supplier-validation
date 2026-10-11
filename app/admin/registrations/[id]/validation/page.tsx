@@ -6,8 +6,14 @@ import { useParams, useRouter } from "next/navigation";
 import {
     getRegistrations,
     updateRegistrationApprovalStatus,
+    getRegistrationDynamicFiles,
 } from "@/lib/storage";
-import { getRequiredDocuments } from "@/lib/document-requirements";
+import {
+    getRequiredDocuments,
+    dynamicFileToRequiredDocument,
+} from "@/lib/document-requirements";
+import type { DynamicFileRequirement } from "@/types/registration";
+
 import {
     getRegistrationRules,
     getRule,
@@ -66,6 +72,8 @@ interface DocumentResult {
     expiryDateMissing: boolean;
     companyMatches: boolean | null;
     status: CheckStatus;
+    isDynamic?: boolean;
+    required?: boolean;
 }
 
 function getDocumentsKey(registrationId: string) {
@@ -201,6 +209,8 @@ export default function ValidationPage() {
         useState<StoredDocument[]>([]);
     const [dynamicFields, setDynamicFields] =
         useState<DynamicField[]>([]);
+    const [dynamicFiles, setDynamicFiles] =
+        useState<DynamicFileRequirement[]>([]);
     const [rules, setRules] =
         useState<RegistrationRule[]>([]);
     const [approvalStatus, setApprovalStatus] =
@@ -249,6 +259,11 @@ export default function ValidationPage() {
             setDynamicFields(JSON.parse(savedFields));
         }
 
+        const savedFiles = getRegistrationDynamicFiles(id);
+        if (savedFiles && savedFiles.length > 0) {
+            setDynamicFiles(savedFiles);
+        }
+
         setLoading(false);
     }, [id]);
 
@@ -281,7 +296,7 @@ export default function ValidationPage() {
         );
     }
 
-    const requiredDocuments = getRequiredDocuments(
+    const categoryRequiredDocuments = getRequiredDocuments(
         registration.supplierCategory,
         rules,
         Number(
@@ -289,6 +304,13 @@ export default function ValidationPage() {
                 ?.expectedPurchaseValue || 0
         )
     );
+    const dynamicRequiredDocuments = dynamicFiles.map(
+        dynamicFileToRequiredDocument
+    );
+    const requiredDocuments = [
+        ...categoryRequiredDocuments,
+        ...dynamicRequiredDocuments,
+    ];
     const expectedCompanyName =
         supplierRegistration?.basicInformation?.companyName ||
         supplierRegistration?.companyName ||
@@ -346,17 +368,17 @@ export default function ValidationPage() {
 
             let status: CheckStatus = "Passed";
 
-            if (
-                (categoryDocumentsRuleEnabled && !document) ||
-                (Boolean(document) && !metadataComplete) ||
-                (expiryRuleEnabled &&
-                    (expiryDateMissing || expired))
-            ) {
+            if (!document) {
+                if (requiredDocument.required === false) {
+                    status = "Not applicable";
+                } else {
+                    status = "Failed";
+                }
+            } else if (!metadataComplete) {
                 status = "Failed";
-            } else if (
-                companyMatchRuleEnabled &&
-                companyMatches === false
-            ) {
+            } else if (expiryRuleEnabled && (expiryDateMissing || expired)) {
+                status = "Failed";
+            } else if (companyMatchRuleEnabled && companyMatches === false) {
                 status = "Review required";
             }
 
@@ -373,6 +395,8 @@ export default function ValidationPage() {
                 expiryDateMissing,
                 companyMatches,
                 status,
+                isDynamic: requiredDocument.isDynamic,
+                required: requiredDocument.required !== false,
             };
         });
 
@@ -518,15 +542,17 @@ export default function ValidationPage() {
         hasSupplierSubmission: Boolean(supplierRegistration),
         requiredFieldCount: registration.requiredFields.length,
         completedRequiredFieldCount,
-        documents: documentResults.map((result) => ({
-            uploaded: Boolean(result.document),
-            metadataFieldCount: result.metadataFieldCount,
-            completedMetadataFieldCount:
-                result.completedMetadataFieldCount,
-            expired: result.expired,
-            expiryDateRequired: result.expiryDateRequired,
-            companyMatches: result.companyMatches,
-        })),
+        documents: documentResults
+            .filter((result) => result.status !== "Not applicable")
+            .map((result) => ({
+                uploaded: Boolean(result.document),
+                metadataFieldCount: result.metadataFieldCount,
+                completedMetadataFieldCount:
+                    result.completedMetadataFieldCount,
+                expired: result.expired,
+                expiryDateRequired: result.expiryDateRequired,
+                companyMatches: result.companyMatches,
+            })),
         rules: ruleResults,
         hasReviewRequired:
             hasReviewDocument ||
@@ -741,24 +767,44 @@ export default function ValidationPage() {
                         {documentResults.map((result) => (
                             <article
                                 key={result.key}
-                                className="rounded-xl border border-slate-200 p-5"
+                                className="rounded-xl border border-slate-200 p-5 bg-white shadow-xs"
                             >
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <h3 className="font-semibold text-slate-900">
-                                            {result.label}
-                                        </h3>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h3 className="font-semibold text-slate-900">
+                                                {result.label}
+                                            </h3>
+                                            {result.isDynamic && (
+                                                <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                                                    Custom Dynamic File
+                                                </span>
+                                            )}
+                                            {result.required ? (
+                                                <span className="rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                                                    Mandatory
+                                                </span>
+                                            ) : (
+                                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                                                    Optional
+                                                </span>
+                                            )}
+                                        </div>
+
                                         {result.document ? (
                                             <a
                                                 href={result.document.dataUrl}
                                                 download={result.document.fileName}
-                                                className="mt-1 inline-block text-sm text-indigo-600 hover:text-indigo-800"
+                                                className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800"
                                             >
-                                                {result.document.fileName} ({formatFileSize(result.document.fileSize)})
+                                                <span>📥 {result.document.fileName}</span>
+                                                <span className="text-xs text-slate-500">
+                                                    ({formatFileSize(result.document.fileSize)})
+                                                </span>
                                             </a>
                                         ) : (
-                                            <p className="mt-1 text-sm text-red-600">
-                                                No document uploaded
+                                            <p className={`mt-1 text-sm ${result.required ? "text-red-600 font-medium" : "text-slate-400"}`}>
+                                                {result.required ? "No document uploaded (Mandatory Requirement)" : "Optional document not uploaded"}
                                             </p>
                                         )}
                                     </div>
@@ -772,7 +818,7 @@ export default function ValidationPage() {
                                     />
                                     <Check
                                         label="Required information complete"
-                                        passed={result.metadataComplete}
+                                        passed={Boolean(result.document) ? result.metadataComplete : !result.required}
                                     />
                                     {result.expiryDateRequired && (
                                         <Check
@@ -789,16 +835,18 @@ export default function ValidationPage() {
                                             }
                                         />
                                     )}
-                                    <Check
-                                        label={
-                                            result.companyMatches === false
-                                                ? "Company name mismatch"
-                                                : result.companyMatches === true
-                                                    ? "Company name matches"
-                                                    : "Company name missing"
-                                        }
-                                        passed={result.companyMatches === true}
-                                    />
+                                    {result.companyMatches !== null && (
+                                        <Check
+                                            label={
+                                                result.companyMatches === false
+                                                    ? "Company name mismatch"
+                                                    : result.companyMatches === true
+                                                        ? "Company name matches"
+                                                        : "Company name missing"
+                                            }
+                                            passed={result.companyMatches === true}
+                                        />
+                                    )}
                                 </div>
 
                                 {result.document && (

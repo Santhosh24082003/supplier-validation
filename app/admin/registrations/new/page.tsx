@@ -38,18 +38,6 @@ const companyInformationOptions = [
         key: "expectedPurchaseValue",
         label: "Expected Purchase Value (INR)",
     },
-    {
-        key: "productName",
-        label: "Product Name",
-    },
-    {
-        key: "productDescription",
-        label: "Product Description",
-    },
-    {
-        key: "unitOfMeasurement",
-        label: "Unit of Measurement",
-    },
 ];
 
 export default function CreateRegistration() {
@@ -68,9 +56,6 @@ export default function CreateRegistration() {
         "companyName",
         "companyEmail",
         "expectedPurchaseValue",
-        "productName",
-        "productDescription",
-        "unitOfMeasurement",
     ]);
 
     const [rules, setRules] = useState<RegistrationRule[]>(

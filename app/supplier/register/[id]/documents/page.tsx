@@ -5,13 +5,20 @@ import {
     useEffect,
     useState,
 } from "react";
-
 import { useParams, useRouter } from "next/navigation";
 
-import { getRegistrations } from "@/lib/storage";
-import { getRequiredDocuments } from "@/lib/document-requirements";
+import {
+    getRegistrations,
+    getRegistrationDynamicFiles,
+} from "@/lib/storage";
+import {
+    getRequiredDocuments,
+    dynamicFileToRequiredDocument,
+    RequiredDocument,
+} from "@/lib/document-requirements";
 import { getRegistrationRules } from "@/lib/rules";
 import type { RegistrationRule } from "@/lib/rules";
+import type { DynamicFileRequirement } from "@/types/registration";
 
 interface Registration {
     id: string;
@@ -34,7 +41,7 @@ interface SavedSupplierRegistration {
     basicInformation?: Record<string, string>;
 }
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 function getDocumentsKey(registrationId: string) {
     return `supplier-documents-${registrationId}`;
@@ -44,7 +51,7 @@ function formatFileSize(fileSize: number) {
     return `${(fileSize / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export default function ValidationPage() {
+export default function SupplierDocumentsPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
@@ -53,6 +60,8 @@ export default function ValidationPage() {
         useState<Registration | null>(null);
     const [documents, setDocuments] =
         useState<StoredDocument[]>([]);
+    const [dynamicFileRequirements, setDynamicFileRequirements] =
+        useState<DynamicFileRequirement[]>([]);
     const [rules, setRules] =
         useState<RegistrationRule[]>([]);
     const [purchaseValue, setPurchaseValue] =
@@ -98,10 +107,15 @@ export default function ValidationPage() {
             setDocuments(JSON.parse(savedDocuments));
         }
 
+        const dynamicFiles = getRegistrationDynamicFiles(id);
+        if (dynamicFiles && dynamicFiles.length > 0) {
+            setDynamicFileRequirements(dynamicFiles);
+        }
+
         setLoading(false);
     }, [id]);
 
-    const requiredDocuments = registration
+    const categoryDocuments = registration
         ? getRequiredDocuments(
             registration.supplierCategory,
             rules,
@@ -109,9 +123,16 @@ export default function ValidationPage() {
         )
         : [];
 
-    function saveDocuments(
-        nextDocuments: StoredDocument[]
-    ) {
+    const dynamicDocuments: RequiredDocument[] = dynamicFileRequirements.map(
+        dynamicFileToRequiredDocument
+    );
+
+    const allDocuments: RequiredDocument[] = [
+        ...categoryDocuments,
+        ...dynamicDocuments,
+    ];
+
+    function saveDocuments(nextDocuments: StoredDocument[]) {
         setDocuments(nextDocuments);
         localStorage.setItem(
             getDocumentsKey(id),
@@ -141,9 +162,7 @@ export default function ValidationPage() {
     }
 
     function handleFileChange(
-        document: ReturnType<
-            typeof getRequiredDocuments
-        >[number],
+        document: RequiredDocument,
         event: ChangeEvent<HTMLInputElement>
     ) {
         const file = event.target.files?.[0];
@@ -162,13 +181,31 @@ export default function ValidationPage() {
             return;
         }
 
+        if (
+            document.allowedExtensions &&
+            document.allowedExtensions.length > 0
+        ) {
+            const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`;
+            const normalizedAllowed = document.allowedExtensions.map((ext) =>
+                ext.toLowerCase()
+            );
+
+            if (!normalizedAllowed.includes(fileExtension)) {
+                setError(
+                    `Invalid file type for ${document.label}. Allowed file types: ${document.allowedExtensions.join(
+                        ", "
+                    )}.`
+                );
+                event.target.value = "";
+                return;
+            }
+        }
+
         const reader = new FileReader();
 
         reader.onload = () => {
             if (typeof reader.result !== "string") {
-                setError(
-                    `Unable to read ${document.label}.`
-                );
+                setError(`Unable to read ${document.label}.`);
                 return;
             }
 
@@ -181,23 +218,18 @@ export default function ValidationPage() {
                 dataUrl: reader.result,
                 uploadedAt: new Date().toISOString(),
                 metadata:
-                    documents.find(
-                        (item) => item.key === document.key
-                    )?.metadata || {},
+                    documents.find((item) => item.key === document.key)
+                        ?.metadata || {},
             };
 
             saveDocuments([
-                ...documents.filter(
-                    (item) => item.key !== document.key
-                ),
+                ...documents.filter((item) => item.key !== document.key),
                 storedDocument,
             ]);
         };
 
         reader.onerror = () => {
-            setError(
-                `Unable to read ${document.label}.`
-            );
+            setError(`Unable to read ${document.label}.`);
         };
 
         reader.readAsDataURL(file);
@@ -205,45 +237,39 @@ export default function ValidationPage() {
 
     function removeDocument(documentKey: string) {
         saveDocuments(
-            documents.filter(
-                (document) => document.key !== documentKey
-            )
+            documents.filter((document) => document.key !== documentKey)
         );
     }
 
     function handleSubmit() {
-        const missingDocuments = requiredDocuments.filter(
+        const missingDocuments = allDocuments.filter(
             (requiredDocument) =>
-                !documents.some(
-                    (document) =>
-                        document.key === requiredDocument.key
-                )
+                requiredDocument.required !== false &&
+                !documents.some((d) => d.key === requiredDocument.key)
         );
 
-        const missingMetadata = requiredDocuments.flatMap(
+        const missingMetadata = allDocuments.flatMap(
             (requiredDocument) => {
                 const uploadedDocument = documents.find(
-                    (document) =>
-                        document.key === requiredDocument.key
+                    (document) => document.key === requiredDocument.key
                 );
+
+                if (!uploadedDocument) return [];
 
                 return requiredDocument.metadataFields
                     .filter(
                         (field) =>
-                            !uploadedDocument?.metadata?.[
-                                field.key
-                            ]?.trim()
+                            !uploadedDocument?.metadata?.[field.key]?.trim()
                     )
                     .map(
-                        (field) =>
-                            `${requiredDocument.label}: ${field.label}`
+                        (field) => `${requiredDocument.label}: ${field.label}`
                     );
             }
         );
 
         if (missingDocuments.length > 0) {
             setError(
-                `Upload all required documents before continuing. Missing: ${missingDocuments
+                `Upload all mandatory documents before continuing. Missing: ${missingDocuments
                     .map((document) => document.label)
                     .join(", ")}.`
             );
@@ -252,7 +278,9 @@ export default function ValidationPage() {
 
         if (missingMetadata.length > 0) {
             setError(
-                `Complete all document information before continuing. Missing: ${missingMetadata.join(", ")}.`
+                `Complete all document information before continuing. Missing: ${missingMetadata.join(
+                    ", "
+                )}.`
             );
             return;
         }
@@ -264,9 +292,7 @@ export default function ValidationPage() {
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb]">
-                <p className="text-slate-600">
-                    Loading documents...
-                </p>
+                <p className="text-slate-600">Loading required documents...</p>
             </main>
         );
     }
@@ -283,118 +309,276 @@ export default function ValidationPage() {
         );
     }
 
+    const mandatoryCount = allDocuments.filter(
+        (doc) => doc.required !== false
+    ).length;
+    const uploadedMandatoryCount = allDocuments.filter(
+        (doc) =>
+            doc.required !== false &&
+            documents.some((d) => d.key === doc.key)
+    ).length;
+
     return (
         <main className="min-h-screen bg-[#f6f8fb] px-4 py-10 sm:px-6">
             <div className="mx-auto max-w-4xl">
                 <button
                     type="button"
                     onClick={() => router.push(`/supplier/register/${id}`)}
-                    className="mb-6 text-sm text-slate-500 hover:text-slate-900"
+                    className="mb-6 text-sm font-medium text-slate-500 hover:text-slate-900 transition flex items-center gap-1"
                 >
-                    Back to registration
+                    ← Back to company registration details
                 </button>
 
                 <div className="mb-8">
-                    <p className="text-sm font-semibold text-blue-700">
-                        {registration.supplierCategory} Supplier
-                    </p>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md">
+                            {registration.supplierCategory} Supplier
+                        </span>
+                        {dynamicFileRequirements.length > 0 && (
+                            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md">
+                                {dynamicFileRequirements.length} Custom File Requirements
+                            </span>
+                        )}
+                    </div>
 
-                    <h1 className="mt-2 text-3xl font-bold text-slate-900">
-                        Upload required documents
+                    <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
+                        Upload Required Documents &amp; Files
                     </h1>
 
-                    <p className="mt-2 text-slate-500">
-                        Upload the documents required for your supplier category.
-                        Each file must be 2 MB or smaller.
+                    <p className="mt-2 text-slate-600">
+                        Upload the category-specific certificates and custom company files required for this onboarding registration. Each file must be 2 MB or smaller.
                     </p>
                 </div>
 
-                <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-                    <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                        <p className="font-semibold text-blue-950">
-                            Required for {registration.supplierCategory}
-                        </p>
-                        <p className="mt-1 text-sm text-blue-800">
-                            {requiredDocuments.length} documents are required for this category.
-                        </p>
+                {/* Progress Overview Card */}
+                <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50/70 p-5 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <p className="font-semibold text-blue-950">
+                                Document Requirements Checklist
+                            </p>
+                            <p className="mt-1 text-sm text-blue-800">
+                                {allDocuments.length} total document requirement{allDocuments.length !== 1 ? "s" : ""} ({mandatoryCount} mandatory, {allDocuments.length - mandatoryCount} optional).
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-sm font-bold text-blue-900 bg-white border border-blue-200 px-3 py-1.5 rounded-lg shadow-2xs">
+                                {uploadedMandatoryCount} / {mandatoryCount} Mandatory Uploaded
+                            </span>
+                        </div>
                     </div>
+                </div>
 
-                    <div className="space-y-4">
-                        {requiredDocuments.map((document) => {
-                            const uploadedDocument = documents.find(
-                                (item) => item.key === document.key
-                            );
+                <div className="space-y-6">
 
-                            return (
-                                <div
-                                    key={document.key}
-                                    className="rounded-xl border border-slate-200 p-4"
-                                >
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <h2 className="font-semibold text-slate-900">
-                                                {document.label}
-                                            </h2>
-                                            <p className="mt-1 text-sm text-slate-500">
-                                                {document.description}
-                                            </p>
-                                            {uploadedDocument && (
-                                                <p className="mt-2 text-xs font-medium text-emerald-700">
-                                                    Uploaded: {uploadedDocument.fileName} ({formatFileSize(uploadedDocument.fileSize)})
+                    {/* SECTION 1: DYNAMIC / CUSTOM FILES (If configured) */}
+                    {dynamicDocuments.length > 0 && (
+                        <section className="rounded-xl border border-indigo-200 bg-white p-6 shadow-sm">
+                            <div className="border-b border-indigo-100 pb-4 mb-5">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">📁</span>
+                                    <h2 className="text-lg font-bold text-slate-900">
+                                        Custom Registration Files
+                                    </h2>
+                                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                                        Configured by Admin
+                                    </span>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Please upload the specific files requested by the onboarding administrator.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {dynamicDocuments.map((document) => {
+                                    const uploadedDocument = documents.find(
+                                        (item) => item.key === document.key
+                                    );
+
+                                    return (
+                                        <div
+                                            key={document.key}
+                                            className="rounded-xl border border-indigo-100/90 bg-indigo-50/10 p-5 transition hover:border-indigo-300"
+                                        >
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h3 className="font-semibold text-slate-900 text-base">
+                                                            {document.label}
+                                                        </h3>
+                                                        {document.required !== false ? (
+                                                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-700">
+                                                                Mandatory
+                                                            </span>
+                                                        ) : (
+                                                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                                                                Optional
+                                                            </span>
+                                                        )}
+                                                        {document.allowedExtensions && document.allowedExtensions.length > 0 && (
+                                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 font-mono">
+                                                                {document.allowedExtensions.join(", ")}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <p className="mt-1 text-sm text-slate-600">
+                                                        {document.description}
+                                                    </p>
+
+                                                    {uploadedDocument && (
+                                                        <div className="mt-2 flex items-center gap-2">
+                                                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                                                ✓ Uploaded: {uploadedDocument.fileName} ({formatFileSize(uploadedDocument.fileSize)})
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex shrink-0 items-center gap-3">
+                                                    <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition shadow-sm">
+                                                        {uploadedDocument ? "Replace file" : "Upload file"}
+                                                        <input
+                                                            type="file"
+                                                            accept={
+                                                                document.allowedExtensions && document.allowedExtensions.length > 0
+                                                                    ? document.allowedExtensions.join(",")
+                                                                    : ".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                                            }
+                                                            onChange={(event) =>
+                                                                handleFileChange(document, event)
+                                                            }
+                                                            className="sr-only"
+                                                        />
+                                                    </label>
+
+                                                    {uploadedDocument && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeDocument(document.key)}
+                                                            className="text-sm font-semibold text-red-600 hover:text-red-700 transition"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Metadata inputs for dynamic file */}
+                                            {uploadedDocument && document.metadataFields.length > 0 && (
+                                                <div className="mt-4 grid gap-4 border-t border-indigo-100 pt-4 sm:grid-cols-2">
+                                                    {document.metadataFields.map((field) => (
+                                                        <div key={field.key}>
+                                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                                                {field.label} <span className="text-red-500">*</span>
+                                                            </label>
+                                                            <input
+                                                                type={field.type}
+                                                                value={
+                                                                    uploadedDocument.metadata?.[field.key] || ""
+                                                                }
+                                                                onChange={(event) =>
+                                                                    updateDocumentMetadata(
+                                                                        document.key,
+                                                                        field.key,
+                                                                        event.target.value
+                                                                    )
+                                                                }
+                                                                placeholder={field.placeholder}
+                                                                className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* SECTION 2: CATEGORY / STANDARD DOCUMENTS */}
+                    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="border-b border-slate-100 pb-4 mb-5">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                Category &amp; Regulatory Documents
+                            </h2>
+                            <p className="mt-1 text-xs text-slate-500">
+                                Standard business verification documents required for {registration.supplierCategory} suppliers.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {categoryDocuments.map((document) => {
+                                const uploadedDocument = documents.find(
+                                    (item) => item.key === document.key
+                                );
+
+                                return (
+                                    <div
+                                        key={document.key}
+                                        className="rounded-xl border border-slate-200 p-5 transition hover:border-slate-300"
+                                    >
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-semibold text-slate-900 text-base">
+                                                        {document.label}
+                                                    </h3>
+                                                    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-bold text-red-700">
+                                                        Mandatory
+                                                    </span>
+                                                </div>
+
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    {document.description}
                                                 </p>
-                                            )}
-                                        </div>
 
-                                        <div className="flex shrink-0 items-center gap-3">
-                                            <label className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-                                                {uploadedDocument ? "Replace file" : "Choose file"}
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                                                    onChange={(event) =>
-                                                        handleFileChange(
-                                                            document,
-                                                            event
-                                                        )
-                                                    }
-                                                    className="sr-only"
-                                                />
-                                            </label>
+                                                {uploadedDocument && (
+                                                    <p className="mt-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block border border-emerald-200">
+                                                        ✓ Uploaded: {uploadedDocument.fileName} ({formatFileSize(uploadedDocument.fileSize)})
+                                                    </p>
+                                                )}
+                                            </div>
 
-                                            {uploadedDocument && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeDocument(
-                                                            document.key
-                                                        )
-                                                    }
-                                                    className="text-sm font-semibold text-red-600 hover:text-red-700"
-                                                >
-                                                    Remove
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
+                                            <div className="flex shrink-0 items-center gap-3">
+                                                <label className="cursor-pointer rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 transition shadow-sm">
+                                                    {uploadedDocument ? "Replace file" : "Choose file"}
+                                                    <input
+                                                        type="file"
+                                                        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                                        onChange={(event) =>
+                                                            handleFileChange(document, event)
+                                                        }
+                                                        className="sr-only"
+                                                    />
+                                                </label>
 
-                                    {uploadedDocument && (
-                                        <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
-                                            {document.metadataFields.map(
-                                                (field) => (
-                                                    <div
-                                                        key={field.key}
+                                                {uploadedDocument && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeDocument(document.key)}
+                                                        className="text-sm font-semibold text-red-600 hover:text-red-700 transition"
                                                     >
-                                                        <label className="mb-2 block text-sm font-medium text-slate-700">
-                                                            {field.label}
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {uploadedDocument && document.metadataFields.length > 0 && (
+                                            <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+                                                {document.metadataFields.map((field) => (
+                                                    <div key={field.key}>
+                                                        <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                                            {field.label} <span className="text-red-500">*</span>
                                                         </label>
 
                                                         <input
                                                             type={field.type}
                                                             value={
-                                                                uploadedDocument
-                                                                    .metadata?.[
-                                                                field.key
-                                                                ] || ""
+                                                                uploadedDocument.metadata?.[field.key] || ""
                                                             }
                                                             onChange={(event) =>
                                                                 updateDocumentMetadata(
@@ -403,43 +587,64 @@ export default function ValidationPage() {
                                                                     event.target.value
                                                                 )
                                                             }
-                                                            placeholder={
-                                                                field.placeholder
-                                                            }
-                                                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                                            placeholder={field.placeholder}
+                                                            className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
                                                         />
                                                     </div>
-                                                )
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
 
+                    {/* Error Banner */}
                     {error && (
-                        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                            {error}
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm flex items-center gap-2">
+                            <span className="font-bold">⚠️</span>
+                            <span>{error}</span>
                         </div>
                     )}
 
+                    {/* Success Banner */}
                     {saved && (
-                        <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                            All required documents are saved
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <span className="text-xl">🎉</span>
+                                <div>
+                                    <h3 className="font-bold text-emerald-900 text-sm">
+                                        All Documents &amp; Dynamic Files Saved!
+                                    </h3>
+                                    <p className="text-xs text-emerald-800 mt-0.5">
+                                        Your documents have been recorded. The administrator will review your registration submission.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     )}
 
-                    <div className="mt-8 flex justify-end">
+                    {/* Submit Bar */}
+                    <div className="flex items-center justify-between pt-4">
+                        <button
+                            type="button"
+                            onClick={() => router.push(`/supplier/register/${id}`)}
+                            className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        >
+                            Back to Form Fields
+                        </button>
+
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="rounded-xl bg-indigo-600 px-7 py-3 font-semibold text-white hover:bg-indigo-700"
+                            className="rounded-xl bg-blue-700 px-8 py-3 text-sm font-semibold text-white hover:bg-blue-800 transition shadow-md focus:ring-4 focus:ring-blue-100"
                         >
-                            Save documents
+                            Save Documents &amp; Complete Submission
                         </button>
                     </div>
-                </section>
+
+                </div>
             </div>
         </main>
     );
